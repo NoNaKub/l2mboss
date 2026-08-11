@@ -578,6 +578,8 @@
     // ฟังก์ชันจัดการเวลาบอส
     function setKillNow(id) {
       const now = Date.now();
+      played5MinAlerts.delete(id);
+      playedSpawnAlerts.delete(id);
       db.ref(`servers/${currentServer}/bosses/${id}`).update({ lastKilled: now });
       sendDiscordAlert(localBosses[id], now, "KILLED");
     }
@@ -590,6 +592,9 @@
       let baseTime = boss.lastKilled || Date.now();
       let newLastKilled = baseTime + respawnMs;
       
+      played5MinAlerts.delete(id);
+      playedSpawnAlerts.delete(id);
+
       db.ref(`servers/${currentServer}/bosses/${id}`).update({ lastKilled: newLastKilled });
       sendDiscordAlert(boss, newLastKilled, "MISS");
     }
@@ -603,6 +608,9 @@
       const target = new Date();
       target.setHours(hours, minutes, 0, 0);
       if (target.getTime() > Date.now()) target.setDate(target.getDate() - 1);
+
+      played5MinAlerts.delete(id);
+      playedSpawnAlerts.delete(id);
 
       db.ref(`servers/${currentServer}/bosses/${id}`).update({ lastKilled: target.getTime() });
       sendDiscordAlert(localBosses[id], target.getTime(), "CUSTOM");
@@ -755,6 +763,8 @@
           statAlive++;
 
           if (!playedSpawnAlerts.has(boss.id)) {
+            playedSpawnAlerts.add(boss.id);
+
             sendDiscordAlert(boss, lastKilled, "SPAWNED");
             
             triggerBrowserNotification(
@@ -762,11 +772,10 @@
               `${displayTitle} has spawned now!`
             );
             speakTextEnglish(`Server ${currentServer}, ${bossNameEng} has spawned`);
-
-            playedSpawnAlerts.add(boss.id);
           }
         } else {
           playedSpawnAlerts.delete(boss.id);
+
           const hours = Math.floor(diff / 3600000);
           const minutes = Math.floor((diff % 3600000) / 60000);
           const seconds = Math.floor((diff % 60000) / 1000);
@@ -777,6 +786,8 @@
 
           if (diff <= 5 * 60 * 1000) {
             if (!played5MinAlerts.has(boss.id)) {
+              played5MinAlerts.add(boss.id);
+
               sendDiscordAlert(boss, lastKilled, "SPAWN_SOON");
               
               triggerBrowserNotification(
@@ -784,8 +795,6 @@
                 `${displayTitle} will spawn in 5 minutes.`
               );
               speakTextEnglish(`Server ${currentServer}, ${bossNameEng} will spawn in 5 minutes`);
-
-              played5MinAlerts.add(boss.id);
             }
           } else {
             played5MinAlerts.delete(boss.id);
