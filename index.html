@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>L2M Boss Time Tracker</title>
+  <!-- Tailwind CSS & FontAwesome Icons -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: { 500: '#eab308', 600: '#ca8a04' }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen font-sans pb-16 selection:bg-yellow-500 selection:text-black">
+
+  <!-- Header Section -->
+  <header class="bg-gray-900/90 border-b border-gray-800 sticky top-0 z-40 backdrop-blur-md shadow-lg">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col md:flex-row justify-between items-center gap-3">
+      
+      <!-- Logo & Sound Toggle -->
+      <div class="flex items-center justify-between w-full md:w-auto gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-center text-yellow-500 text-xl shadow-inner">
+            <i class="fa-solid fa-dragon"></i>
+          </div>
+          <div>
+            <h1 class="text-lg font-extrabold text-yellow-400 tracking-wider">L2M BOSS TRACKER</h1>
+            <p class="text-[10px] text-gray-400">For Free</p>
+          </div>
+        </div>
+
+        <!-- Mobile Sound Toggle -->
+        <button id="sound-btn-mobile" onclick="toggleSound()" class="md:hidden text-gray-400 hover:text-yellow-400 p-2">
+          <i id="sound-icon-mobile" class="fa-solid fa-volume-xmark text-lg"></i>
+        </button>
+      </div>
+      
+      <!-- Server Select, Search & Action Buttons -->
+      <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+        
+        <!-- ปุ่มเลือกเซิร์ฟเวอร์ -->
+        <div class="flex items-center bg-gray-950 border border-gray-800 rounded-lg p-1 gap-1">
+          <button id="btn-server-A10" onclick="changeServer('A10')" class="px-3 py-1 rounded-md text-xs font-bold transition-all bg-yellow-500 text-black shadow-md">
+            A10
+          </button>
+          <button id="btn-server-Invasion" onclick="changeServer('Invasion')" class="px-3 py-1 rounded-md text-xs font-bold text-gray-400 hover:text-white transition-all hover:bg-gray-800">
+            Invasion
+          </button>
+        </div>
+
+        <div class="relative flex-1 md:w-48">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-gray-500 text-xs"></i>
+          <input type="text" id="search-input" oninput="filterBosses()" placeholder="ค้นหาบอส..." 
+                 class="w-full bg-gray-950 border border-gray-800 rounded-lg pl-8 pr-3 py-1.5 text-xs focus:outline-none focus:border-yellow-500 text-white placeholder-gray-500 transition">
+        </div>
+
+        <!-- Sound Toggle Desktop -->
+        <button id="sound-btn" onclick="toggleSound()" title="เปิด/ปิด เสียงแจ้งเตือนพูดภาษาอังกฤษ" class="hidden md:flex bg-gray-950 border border-gray-800 hover:border-yellow-500/50 text-gray-400 hover:text-yellow-400 px-3 py-1.5 rounded-lg text-xs font-semibold transition items-center gap-2">
+          <i id="sound-icon" class="fa-solid fa-volume-xmark text-red-400"></i>
+          <span id="sound-text">Mute Voice</span>
+        </button>
+
+        <!-- Discord Button -->
+        <button onclick="toggleDiscordModal(true)" class="bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 border border-indigo-500/30 px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5">
+          <i class="fa-brands fa-discord"></i> Discord
+        </button>
+
+        <!-- ปุ่มรีเซ็ตเวลาบอสทั้งหมด -->
+        <button onclick="resetAllBossesTime()" title="รีเซ็ตเวลาบอสทั้งหมดในเซิร์ฟเวอร์นี้" class="bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-800/50 px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5">
+          <i class="fa-solid fa-rotate-left"></i> รีเซ็ตเวลาบอสทั้งหมด
+        </button>
+
+        <!-- Management Button -->
+        <button onclick="toggleManageModal(true)" class="bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-3 py-1.5 rounded-lg text-xs transition flex items-center gap-1.5 shadow-md shadow-yellow-500/10">
+          <i class="fa-solid fa-gear"></i> จัดการบอส
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl mx-auto px-4 mt-6">
+    
+    <!-- Active Server Bar & Web Notification Permission -->
+    <div class="flex flex-col sm:flex-row items-center justify-between mb-4 bg-gray-900/40 p-3 rounded-xl border border-gray-800/80 gap-2">
+      <div class="flex items-center gap-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-green-500 animate-ping"></span>
+        <span class="text-xs text-gray-400">กำลังแสดงข้อมูลเซิร์ฟเวอร์:</span>
+        <span id="current-server-display" class="text-sm font-black text-yellow-400 uppercase tracking-wider">A10</span>
+      </div>
+
+      <!-- ปุ่มขอเปิดสิทธิ์ Web Notifications -->
+      <button id="notification-perm-btn" onclick="requestNotificationPermission()" class="text-xs bg-gray-800 hover:bg-gray-700 text-yellow-400 border border-gray-700 px-3 py-1 rounded-lg transition flex items-center gap-1.5">
+        <i class="fa-solid fa-bell"></i> เปิดการแจ้งเตือนเบราว์เซอร์
+      </button>
+    </div>
+
+    <!-- Dashboard Status Grid -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+      <div class="bg-gray-900/60 border border-gray-800/80 rounded-xl p-3 text-center backdrop-blur">
+        <span class="text-[11px] font-medium text-gray-400 block mb-1">บอสทั้งหมด</span>
+        <span id="stat-total" class="text-2xl font-black text-white">0</span>
+      </div>
+      <div class="bg-red-950/20 border border-red-900/40 rounded-xl p-3 text-center backdrop-blur">
+        <span class="text-[11px] font-medium text-red-400 block mb-1">เกิดแล้ว (ALIVE)</span>
+        <span id="stat-alive" class="text-2xl font-black text-red-400">0</span>
+      </div>
+      <div class="bg-yellow-950/20 border border-yellow-900/40 rounded-xl p-3 text-center backdrop-blur">
+        <span class="text-[11px] font-medium text-yellow-400 block mb-1">ใกล้เกิด (&lt; 30 นาที)</span>
+        <span id="stat-soon" class="text-2xl font-black text-yellow-400">0</span>
+      </div>
+      <div class="bg-gray-900/60 border border-gray-800/80 rounded-xl p-3 text-center backdrop-blur">
+        <span class="text-[11px] font-medium text-gray-400 block mb-1">กำลังคูลดาวน์</span>
+        <span id="stat-cooldown" class="text-2xl font-black text-green-400">0</span>
+      </div>
+    </div>
+
+    <!-- Horizontal Boss List Container -->
+    <div id="boss-list" class="space-y-2.5">
+      <div class="text-center py-16 text-gray-500">
+        <i class="fa-solid fa-circle-notch fa-spin text-3xl text-yellow-500 mb-3"></i>
+        <p class="text-sm">กำลังเชื่อมต่อฐานข้อมูล Realtime...</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- MODAL 1: เมนูจัดการข้อมูลบอส (CRUD) -->
+  <div id="manage-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+      
+      <div class="px-6 py-4 border-b border-gray-800 flex justify-between items-center bg-gray-900/80">
+        <h2 class="text-base font-bold text-yellow-400 flex items-center gap-2">
+          <i class="fa-solid fa-sliders"></i> เมนูจัดการข้อมูลบอส (<span id="modal-server-name">A10</span>)
+        </h2>
+        <button onclick="toggleManageModal(false)" class="text-gray-400 hover:text-white transition">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="p-6 overflow-y-auto space-y-6 flex-1 custom-scrollbar">
+        <!-- Add/Edit Form -->
+        <div class="bg-gray-950 p-4 rounded-xl border border-gray-800">
+          <h3 id="form-title" class="text-xs font-bold text-gray-300 mb-3 flex items-center gap-1.5 uppercase tracking-wider">
+            <i class="fa-solid fa-plus text-yellow-500"></i> เพิ่มบอสใหม่
+          </h3>
+          <input type="hidden" id="edit-boss-id" value="">
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+            <div>
+              <label class="text-[11px] text-gray-400 block mb-1">ชื่อบอส (อังกฤษ)</label>
+              <input type="text" id="boss-name" placeholder="เช่น Queen Ant" class="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-yellow-500">
+            </div>
+            <div>
+              <label class="text-[11px] text-gray-400 block mb-1">ชื่อบอส (ไทย)</label>
+              <input type="text" id="boss-name-th" placeholder="เช่น ควีนแอนท์" class="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-yellow-500">
+            </div>
+            <div>
+              <label class="text-[11px] text-gray-400 block mb-1">คูลดาวน์ (ชั่วโมง)</label>
+              <input type="number" id="boss-respawn" step="0.1" placeholder="เช่น 6 หรือ 12.5" class="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-yellow-500">
+            </div>
+            <div>
+              <label class="text-[11px] text-gray-400 block mb-1">โอกาสเกิด (%)</label>
+              <input type="number" id="boss-chance" min="1" max="100" placeholder="เช่น 100 หรือ 70" class="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-yellow-500">
+            </div>
+          </div>
+
+          <!-- สถานที่เกิด และ ตัวเลือกอัปโหลดรูปภาพ -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+            <div>
+              <label class="text-[11px] text-gray-400 block mb-1">สถานที่บอสเกิด</label>
+              <input type="text" id="boss-location" placeholder="เช่น รังมด ชั้น 3" class="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-yellow-500">
+            </div>
+            <div>
+              <label class="text-[11px] text-gray-400 block mb-1">รูปภาพบอส (เลือกไฟล์ หรือ วาง URL)</label>
+              <div class="flex gap-2">
+                <input type="text" id="boss-image" oninput="previewImageInput()" placeholder="วาง Image URL หรือ อัปโหลด..." class="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-yellow-500">
+                <label class="bg-gray-800 hover:bg-gray-700 text-yellow-400 border border-gray-700 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer flex items-center gap-1 flex-shrink-0">
+                  <i class="fa-solid fa-upload"></i> อัปไฟล์
+                  <input type="file" id="boss-image-file" accept="image/*" onchange="handleFileUpload(event)" class="hidden">
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- ตัวแสดง ตัวอย่างรูปภาพ (Preview) -->
+          <div id="image-preview-container" class="hidden mb-3 flex items-center gap-3 bg-gray-900 p-2 rounded-lg border border-gray-800">
+            <img id="image-preview" src="" class="w-10 h-10 object-cover rounded-lg border border-gray-700">
+            <span class="text-xs text-gray-400 flex-1">รูปภาพตัวอย่าง</span>
+            <button onclick="clearBossImage()" class="text-red-400 hover:text-red-300 text-xs p-1"><i class="fa-solid fa-trash"></i> ลบรูป</button>
+          </div>
+
+          <div class="flex gap-2 justify-end">
+            <button id="cancel-edit-btn" onclick="resetForm()" class="hidden bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs px-3 py-1.5 rounded-lg transition">ยกเลิก</button>
+            <button onclick="saveBoss()" class="bg-green-600 hover:bg-green-500 text-white font-bold text-xs px-4 py-1.5 rounded-lg transition flex items-center gap-1">
+              <i class="fa-solid fa-floppy-disk"></i> บันทึกข้อมูล
+            </button>
+          </div>
+        </div>
+
+        <!-- Current Bosses Table -->
+        <div>
+          <!-- เพิ่มส่วนหัวข้อและช่องค้นหาบอสภายในเมนูจัดการบอส -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+            <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider">รายการบอสทั้งหมดในเซิร์ฟเวอร์นี้</h3>
+            <div class="relative w-full sm:w-48">
+              <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-gray-500 text-xs"></i>
+              <input type="text" id="manage-search-input" oninput="renderManageList()" placeholder="ค้นหาชื่อบอส/สถานที่..." 
+                     class="w-full bg-gray-950 border border-gray-800 rounded-lg pl-8 pr-3 py-1 text-xs focus:outline-none focus:border-yellow-500 text-white placeholder-gray-500 transition">
+            </div>
+          </div>
+          <div id="manage-boss-list" class="space-y-2"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: ตั้งค่า Discord Webhook -->
+  <div id="discord-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-md p-6 shadow-2xl">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-base font-bold text-indigo-400 flex items-center gap-2">
+          <i class="fa-brands fa-discord"></i> Discord Webhook Integration
+        </h2>
+        <button onclick="toggleDiscordModal(false)" class="text-gray-400 hover:text-white">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <p class="text-xs text-gray-400 mb-4">ใส่ Discord Webhook URL ของเซิร์ฟเวอร์ <strong id="discord-server-name" class="text-yellow-400">A10</strong> เพื่อรับแจ้งเตือนบอส</p>
+
+      <div class="space-y-3 mb-6">
+        <div>
+          <label class="text-[11px] text-gray-400 block mb-1">Webhook URL</label>
+          <input type="text" id="discord-url" placeholder="https://discord.com/api/webhooks/..." class="w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2">
+        <button onclick="testDiscordWebhook()" class="bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs px-3 py-2 rounded-lg transition">ทดสอบส่ง</button>
+        <button onclick="saveDiscordWebhook()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-4 py-2 rounded-lg transition">บันทึกตั้งค่า</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Firebase Configurations
+    const firebaseConfig = {
+      apiKey: "AIzaSyBfVGQdonVzv5KuGG-Bar-oJoRqmcuDPWw",
+      authDomain: "l2m-boss-timer-cb9d4.firebaseapp.com",
+      databaseURL: "https://l2m-boss-timer-cb9d4-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "l2m-boss-timer-cb9d4",
+      storageBucket: "l2m-boss-timer-cb9d4.firebasestorage.app",
+      messagingSenderId: "519210716566",
+      appId: "1:519210716566:web:8024927eaae8dea3a7e1b7"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const defaultBosses = {};
+
+    let currentServer = "A10";
+    let localBosses = {};
+    let isSoundEnabled = false;
+    let discordWebhookUrl = "";
+    
+    let bossesRef = null;
+    let settingsRef = null;
+
+    const played5MinAlerts = new Set();
+    const playedSpawnAlerts = new Set();
+
+    // 1. ระบบ Browser Notification
+    function requestNotificationPermission() {
+      if (!("Notification" in window)) {
+        alert("เบราว์เซอร์ของคุณไม่รองรับการแจ้งเตือนแบบ Web Notification");
+        return;
+      }
+      Notification.requestPermission().then(permission => {
+        if (permission === "granted") {
+          updateNotificationBtnUI();
+          new Notification("L2M Boss Tracker", {
+            body: "เปิดใช้งานระบบแจ้งเตือนป๊อปอัพสำเร็จ!",
+            icon: "https://cdn-icons-png.flaticon.com/512/3082/3082383.png"
+          });
+        }
+      });
+    }
+
+    function updateNotificationBtnUI() {
+      const btn = document.getElementById('notification-perm-btn');
+      if (window.Notification && Notification.permission === "granted") {
+        btn.className = "text-xs bg-green-950/60 text-green-400 border border-green-800 px-3 py-1 rounded-lg flex items-center gap-1.5 cursor-default";
+        btn.innerHTML = `<i class="fa-solid fa-circle-check text-green-400"></i> เปิดการแจ้งเตือนแล้ว`;
+        btn.onclick = null;
+      }
+    }
+
+    function triggerBrowserNotification(title, body) {
+      if (window.Notification && Notification.permission === "granted") {
+        new Notification(title, {
+          body: body,
+          icon: "https://cdn-icons-png.flaticon.com/512/3082/3082383.png"
+        });
+      }
+    }
+
+    // 2. ระบบพูดแจ้งเตือนภาษาอังกฤษ
+    function speakTextEnglish(text) {
+      if (!isSoundEnabled || !('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US';
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function toggleSound() {
+      isSoundEnabled = !isSoundEnabled;
+      const soundBtnMobile = document.getElementById('sound-icon-mobile');
+      const soundIcon = document.getElementById('sound-icon');
+      const soundText = document.getElementById('sound-text');
+
+      if (isSoundEnabled) {
+        soundBtnMobile.className = "fa-solid fa-volume-high text-yellow-400";
+        soundIcon.className = "fa-solid fa-volume-high text-yellow-400";
+        soundText.innerText = "Voice On";
+        speakTextEnglish("Voice notification enabled");
+      } else {
+        window.speechSynthesis.cancel();
+        soundBtnMobile.className = "fa-solid fa-volume-xmark text-red-400";
+        soundIcon.className = "fa-solid fa-volume-xmark text-red-400";
+        soundText.innerText = "Mute Voice";
+      }
+    }
+
+    // 3. เปลี่ยนเซิร์ฟเวอร์แบบปุ่มกด
+    function changeServer(serverName) {
+      currentServer = serverName;
+      document.getElementById('current-server-display').innerText = currentServer;
+      document.getElementById('modal-server-name').innerText = currentServer;
+      document.getElementById('discord-server-name').innerText = currentServer;
+
+      const btnA10 = document.getElementById('btn-server-A10');
+      const btnInvasion = document.getElementById('btn-server-Invasion');
+
+      if (serverName === 'A10') {
+        btnA10.className = "px-3 py-1 rounded-md text-xs font-bold transition-all bg-yellow-500 text-black shadow-md";
+        btnInvasion.className = "px-3 py-1 rounded-md text-xs font-bold text-gray-400 hover:text-white transition-all hover:bg-gray-800";
+      } else {
+        btnInvasion.className = "px-3 py-1 rounded-md text-xs font-bold transition-all bg-yellow-500 text-black shadow-md";
+        btnA10.className = "px-3 py-1 rounded-md text-xs font-bold text-gray-400 hover:text-white transition-all hover:bg-gray-800";
+      }
+
+      played5MinAlerts.clear();
+      playedSpawnAlerts.clear();
+
+      bindFirebaseListeners();
+    }
+
+    // ผูก Realtime Database
+    function bindFirebaseListeners() {
+      if (bossesRef) bossesRef.off();
+      if (settingsRef) settingsRef.off();
+
+      bossesRef = db.ref(`servers/${currentServer}/bosses`);
+      settingsRef = db.ref(`servers/${currentServer}/settings`);
+
+      bossesRef.on('value', (snapshot) => {
+        const data = snapshot.val();
+        localBosses = data || {};
+        renderBosses();
+        renderManageList();
+      });
+
+      settingsRef.child('discordWebhook').on('value', (snapshot) => {
+        discordWebhookUrl = snapshot.val() || "";
+        document.getElementById('discord-url').value = discordWebhookUrl;
+      });
+    }
+
+    bindFirebaseListeners();
+    updateNotificationBtnUI();
+
+    // ระบบเลือกไฟล์รูป และ พรีวิวรูป
+    function handleFileUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      if (file.size > 2 * 1024 * 1024) {
+        alert("ไฟล์ภาพมีขนาดใหญ่เกินไป (กรุณาใช้ภาพขนาดไม่เกิน 2MB)");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const base64Url = e.target.result;
+        document.getElementById('boss-image').value = base64Url;
+        showImagePreview(base64Url);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function previewImageInput() {
+      const url = document.getElementById('boss-image').value.trim();
+      if (url) {
+        showImagePreview(url);
+      } else {
+        clearBossImage();
+      }
+    }
+
+    function showImagePreview(src) {
+      const previewContainer = document.getElementById('image-preview-container');
+      const previewImg = document.getElementById('image-preview');
+      previewImg.src = src;
+      previewContainer.classList.remove('hidden');
+    }
+
+    function clearBossImage() {
+      document.getElementById('boss-image').value = '';
+      document.getElementById('boss-image-file').value = '';
+      document.getElementById('image-preview-container').classList.add('hidden');
+    }
+
+    // CRUD Boss Functions
+    function toggleManageModal(show) {
+      document.getElementById('manage-modal').classList.toggle('hidden', !show);
+      if (show) {
+        const manageSearch = document.getElementById('manage-search-input');
+        if (manageSearch) manageSearch.value = '';
+        resetForm();
+      }
+    }
+
+    function toggleDiscordModal(show) {
+      document.getElementById('discord-modal').classList.toggle('hidden', !show);
+    }
+
+    function saveBoss() {
+      const editId = document.getElementById('edit-boss-id').value;
+      const name = document.getElementById('boss-name').value.trim();
+      const nameTh = document.getElementById('boss-name-th').value.trim();
+      const respawnHours = parseFloat(document.getElementById('boss-respawn').value);
+      const chance = parseInt(document.getElementById('boss-chance').value) || 100;
+      const location = document.getElementById('boss-location').value.trim();
+      const image = document.getElementById('boss-image').value.trim();
+
+      if (!name || isNaN(respawnHours) || respawnHours <= 0) {
+        alert("กรุณากรอกข้อมูลบอสให้ครบถ้วน");
+        return;
+      }
+
+      const bossData = { name, nameTh, respawnHours, chance, location, image };
+
+      if (editId) {
+        db.ref(`servers/${currentServer}/bosses/${editId}`).update(bossData);
+      } else {
+        const newId = 'b_' + Date.now();
+        db.ref(`servers/${currentServer}/bosses/${newId}`).set({ ...bossData, lastKilled: 0 });
+      }
+      resetForm();
+    }
+
+    function editBoss(id) {
+      const boss = localBosses[id];
+      if (!boss) return;
+      document.getElementById('edit-boss-id').value = id;
+      document.getElementById('boss-name').value = boss.name;
+      document.getElementById('boss-name-th').value = boss.nameTh || '';
+      document.getElementById('boss-respawn').value = boss.respawnHours;
+      document.getElementById('boss-chance').value = boss.chance || 100;
+      document.getElementById('boss-location').value = boss.location || '';
+      document.getElementById('boss-image').value = boss.image || '';
+
+      if (boss.image) {
+        showImagePreview(boss.image);
+      } else {
+        clearBossImage();
+      }
+
+      document.getElementById('form-title').innerHTML = `<i class="fa-solid fa-pen-to-square text-yellow-500"></i> แก้ไขบอส`;
+      document.getElementById('cancel-edit-btn').classList.remove('hidden');
+    }
+
+    function deleteBoss(id, name) {
+      if (confirm(`ลบบอส "${name}" ใช่หรือไม่?`)) {
+        db.ref(`servers/${currentServer}/bosses/${id}`).remove();
+      }
+    }
+
+    function resetForm() {
+      document.getElementById('edit-boss-id').value = '';
+      document.getElementById('boss-name').value = '';
+      document.getElementById('boss-name-th').value = '';
+      document.getElementById('boss-respawn').value = '';
+      document.getElementById('boss-chance').value = '100';
+      document.getElementById('boss-location').value = '';
+      clearBossImage();
+      document.getElementById('form-title').innerHTML = `<i class="fa-solid fa-plus text-yellow-500"></i> เพิ่มบอสใหม่`;
+      document.getElementById('cancel-edit-btn').classList.add('hidden');
+    }
+
+    function renderManageList() {
+      const container = document.getElementById('manage-boss-list');
+      const searchInput = document.getElementById('manage-search-input');
+      const searchKeyword = searchInput ? searchInput.value.toLowerCase().trim() : '';
+      
+      container.innerHTML = '';
+
+      let bossKeys = Object.keys(localBosses);
+
+      if (bossKeys.length === 0) {
+        container.innerHTML = `<p class="text-center text-gray-500 py-4">ยังไม่มีข้อมูลบอสในเซิร์ฟเวอร์นี้</p>`;
+        return;
+      }
+
+      // กรองรายการบอสในเมนูจัดการตามชื่อบอส (อังกฤษ/ไทย) หรือสถานที่
+      if (searchKeyword) {
+        bossKeys = bossKeys.filter(id => {
+          const boss = localBosses[id];
+          const nameMatch = boss.name && boss.name.toLowerCase().includes(searchKeyword);
+          const nameThMatch = boss.nameTh && boss.nameTh.toLowerCase().includes(searchKeyword);
+          const locationMatch = boss.location && boss.location.toLowerCase().includes(searchKeyword);
+          return nameMatch || nameThMatch || locationMatch;
+        });
+      }
+
+      if (bossKeys.length === 0) {
+        container.innerHTML = `<p class="text-center text-gray-500 py-4">ไม่พบข้อมูลบอสที่ค้นหา</p>`;
+        return;
+      }
+
+      bossKeys.forEach(id => {
+        const boss = localBosses[id];
+        const row = document.createElement('div');
+        row.className = "flex justify-between items-center bg-gray-950 p-3 rounded-lg border border-gray-800 text-xs gap-3";
+        
+        const bossImg = boss.image 
+          ? `<img src="${boss.image}" class="w-8 h-8 rounded-lg object-cover border border-gray-700">`
+          : `<div class="w-8 h-8 rounded-lg bg-gray-800 border border-gray-700 flex items-center justify-center text-gray-500"><i class="fa-solid fa-dragon"></i></div>`;
+
+        const displayName = boss.nameTh ? `${boss.name} (${boss.nameTh})` : boss.name;
+
+        row.innerHTML = `
+          <div class="flex items-center gap-2.5 overflow-hidden">
+            ${bossImg}
+            <div class="truncate">
+              <span class="font-bold text-white">${displayName}</span>
+              <span class="text-yellow-500 ml-1">(${boss.chance || 100}%)</span>
+              <span class="text-gray-500 block text-[11px] truncate">
+                เกิดทุก ${boss.respawnHours} ชม. ${boss.location ? `• 📍 ${boss.location}` : ''}
+              </span>
+            </div>
+          </div>
+          <div class="flex gap-1.5 flex-shrink-0">
+            <button onclick="editBoss('${id}')" class="bg-gray-800 hover:bg-gray-700 text-yellow-400 px-2.5 py-1.5 rounded transition"><i class="fa-solid fa-pen"></i></button>
+            <button onclick="deleteBoss('${id}', '${boss.name}')" class="bg-gray-800 hover:bg-gray-700 text-red-400 px-2.5 py-1.5 rounded transition"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    // ฟังก์ชันจัดการเวลาบอส
+    function setKillNow(id) {
+      const now = Date.now();
+      db.ref(`servers/${currentServer}/bosses/${id}`).update({ lastKilled: now });
+      sendDiscordAlert(localBosses[id], now, "KILLED");
+    }
+
+    function setBossMiss(id) {
+      const boss = localBosses[id];
+      if (!boss) return;
+      
+      const respawnMs = boss.respawnHours * 3600 * 1000;
+      let baseTime = boss.lastKilled || Date.now();
+      let newLastKilled = baseTime + respawnMs;
+      
+      db.ref(`servers/${currentServer}/bosses/${id}`).update({ lastKilled: newLastKilled });
+      sendDiscordAlert(boss, newLastKilled, "MISS");
+    }
+
+    function setCustomKillTime(id) {
+      const timeStr = prompt("ใส่เวลาที่บอสตาย (รูปแบบ HH:mm เช่น 14:30):");
+      if (!timeStr) return;
+      const [hours, minutes] = timeStr.split(':').map(Number);
+      if (isNaN(hours) || isNaN(minutes)) return alert("รูปแบบเวลาไม่ถูกต้อง");
+
+      const target = new Date();
+      target.setHours(hours, minutes, 0, 0);
+      if (target.getTime() > Date.now()) target.setDate(target.getDate() - 1);
+
+      db.ref(`servers/${currentServer}/bosses/${id}`).update({ lastKilled: target.getTime() });
+      sendDiscordAlert(localBosses[id], target.getTime(), "CUSTOM");
+    }
+
+    // รีเซ็ตเวลาบอสทั้งหมดในเซิร์ฟเวอร์
+    function resetAllBossesTime() {
+      if (confirm(`คุณต้องการ "รีเซ็ตเวลาบอสทั้งหมด" ในเซิร์ฟเวอร์ ${currentServer} ใช่หรือไม่?`)) {
+        const updates = {};
+        Object.keys(localBosses).forEach(id => {
+          updates[`servers/${currentServer}/bosses/${id}/lastKilled`] = 0;
+        });
+        db.ref().update(updates);
+      }
+    }
+
+    // Discord Notifications
+    function saveDiscordWebhook() {
+      const url = document.getElementById('discord-url').value.trim();
+      settingsRef.child('discordWebhook').set(url);
+      toggleDiscordModal(false);
+    }
+
+    function testDiscordWebhook() {
+      const url = document.getElementById('discord-url').value.trim();
+      if (!url) return alert("กรุณาใส่ Webhook URL");
+      fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: `⚔️ **[L2M Boss Tracker - ${currentServer}]** ทดสอบระบบแจ้งเตือน Discord สำเร็จ!` })
+      }).then(() => alert("ส่งข้อความทดสอบสำเร็จ")).catch(() => alert("เกิดข้อผิดพลาด"));
+    }
+
+    function sendDiscordAlert(boss, killTime, type = "KILLED") {
+      if (!discordWebhookUrl || !boss) return;
+      const nextSpawn = new Date(killTime + (boss.respawnHours * 3600 * 1000));
+      const spawnStr = nextSpawn.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+      
+      const bossDisplayName = boss.nameTh ? `${boss.name} (${boss.nameTh})` : boss.name;
+
+      let title = `💀 [Server ${currentServer}] บันทึกบอสตาย: ${bossDisplayName}`;
+      if (type === "MISS") title = `🚫 [Server ${currentServer}] บอสไม่เกิด (MISS): ${bossDisplayName} (นับรอบถัดไป)`;
+      if (type === "SPAWN_SOON") title = `⚠️ [Server ${currentServer}] [เตือนล่วงหน้า 5 นาที] บอสใกล้เกิด: ${bossDisplayName}`;
+      if (type === "SPAWNED") title = `🚨 [Server ${currentServer}] [บอสเกิดแล้ว!] ALIVE: ${bossDisplayName}`;
+
+      const fields = [
+        { name: "เซิร์ฟเวอร์", value: currentServer, inline: true },
+        { name: "โอกาสเกิด", value: `${boss.chance || 100}%`, inline: true },
+        { name: "คูลดาวน์", value: `${boss.respawnHours} ชม.`, inline: true }
+      ];
+
+      if (boss.location) {
+        fields.push({ name: "สถานที่เกิด", value: boss.location, inline: true });
+      }
+
+      fields.push({ name: "เวลาเกิดถัดไป", value: `**${spawnStr} น.**`, inline: false });
+
+      const embed = {
+        title: title,
+        color: type === "SPAWNED" ? 15158332 : (type === "SPAWN_SOON" ? 16766720 : 3447003),
+        fields: fields,
+        timestamp: new Date().toISOString()
+      };
+
+      if (boss.image && !boss.image.startsWith('data:image')) {
+        embed.thumbnail = { url: boss.image };
+      }
+
+      fetch(discordWebhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ embeds: [embed] })
+      });
+    }
+
+    function filterBosses() { renderBosses(); }
+
+    // Render รายการบอส
+    function renderBosses() {
+      const container = document.getElementById('boss-list');
+      const searchKeyword = document.getElementById('search-input').value.toLowerCase();
+
+      container.innerHTML = '';
+      let statTotal = 0, statAlive = 0, statSoon = 0, statCooldown = 0;
+
+      let bossArray = Object.keys(localBosses).map(id => ({
+        id,
+        ...localBosses[id]
+      }));
+
+      bossArray = bossArray.filter(b => {
+        const nameMatch = b.name && b.name.toLowerCase().includes(searchKeyword);
+        const nameThMatch = b.nameTh && b.nameTh.toLowerCase().includes(searchKeyword);
+        const locMatch = b.location && b.location.toLowerCase().includes(searchKeyword);
+        return nameMatch || nameThMatch || locMatch;
+      });
+
+      if (bossArray.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-16 text-gray-500 bg-gray-900/30 rounded-xl border border-gray-800">
+            <i class="fa-solid fa-ghost text-4xl mb-3 text-gray-600"></i>
+            <p class="text-sm font-semibold text-gray-400">ยังไม่มีข้อมูลบอสในเซิร์ฟเวอร์นี้</p>
+            <p class="text-xs text-gray-600 mt-1">กดปุ่ม <strong class="text-yellow-500">"จัดการบอส"</strong> ด้านบนเพื่อเพิ่มข้อมูลบอสใหม่</p>
+          </div>
+        `;
+        document.getElementById('stat-total').innerText = 0;
+        document.getElementById('stat-alive').innerText = 0;
+        document.getElementById('stat-soon').innerText = 0;
+        document.getElementById('stat-cooldown').innerText = 0;
+        return;
+      }
+
+      bossArray.sort((a, b) => {
+        const nextA = a.lastKilled ? (a.lastKilled + a.respawnHours * 3600 * 1000) : Infinity;
+        const nextB = b.lastKilled ? (b.lastKilled + b.respawnHours * 3600 * 1000) : Infinity;
+        const diffA = nextA - Date.now();
+        const diffB = nextB - Date.now();
+
+        if (!a.lastKilled && !b.lastKilled) return 0;
+        if (!a.lastKilled) return 1;
+        if (!b.lastKilled) return -1;
+
+        return diffA - diffB;
+      });
+
+      bossArray.forEach(boss => {
+        statTotal++;
+        const lastKilled = boss.lastKilled;
+        const respawnMs = boss.respawnHours * 3600 * 1000;
+        const nextSpawn = lastKilled ? (lastKilled + respawnMs) : 0;
+        const diff = nextSpawn - Date.now();
+
+        let rowBg = "bg-gray-900/80 border-gray-800/80 hover:border-gray-700";
+        let statusBadge = "";
+        let countdownText = "--:--:--";
+        let nextSpawnTimeStr = "-";
+        let isAlive = false;
+
+        const bossNameEng = boss.name.split('(')[0].trim();
+        const displayTitle = boss.nameTh ? `${boss.name} (${boss.nameTh})` : boss.name;
+
+        if (!lastKilled) {
+          statusBadge = `<span class="bg-gray-800 text-gray-400 text-[10px] font-semibold px-2 py-0.5 rounded border border-gray-700">NO DATA</span>`;
+          statCooldown++;
+        } else if (diff <= 0) {
+          isAlive = true;
+          rowBg = "bg-red-950/30 border-red-600/60 shadow-lg shadow-red-950/20 ring-1 ring-red-500/20";
+          statusBadge = `<span class="bg-red-600 text-white text-[10px] font-black px-2 py-0.5 rounded tracking-wide animate-pulse">ALIVE</span>`;
+          countdownText = "BOSS ALIVE";
+          statAlive++;
+
+          if (!playedSpawnAlerts.has(boss.id)) {
+            sendDiscordAlert(boss, lastKilled, "SPAWNED");
+            
+            triggerBrowserNotification(
+              `🚨 [${currentServer}] Boss Alive!`,
+              `${displayTitle} has spawned now!`
+            );
+            speakTextEnglish(`Server ${currentServer}, ${bossNameEng} has spawned`);
+
+            playedSpawnAlerts.add(boss.id);
+          }
+        } else {
+          playedSpawnAlerts.delete(boss.id);
+          const hours = Math.floor(diff / 3600000);
+          const minutes = Math.floor((diff % 3600000) / 60000);
+          const seconds = Math.floor((diff % 60000) / 1000);
+          countdownText = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+          const spawnDate = new Date(nextSpawn);
+          nextSpawnTimeStr = spawnDate.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+
+          if (diff <= 5 * 60 * 1000) {
+            if (!played5MinAlerts.has(boss.id)) {
+              sendDiscordAlert(boss, lastKilled, "SPAWN_SOON");
+              
+              triggerBrowserNotification(
+                `⚠️ [${currentServer}] Boss Respawn Soon!`,
+                `${displayTitle} will spawn in 5 minutes.`
+              );
+              speakTextEnglish(`Server ${currentServer}, ${bossNameEng} will spawn in 5 minutes`);
+
+              played5MinAlerts.add(boss.id);
+            }
+          } else {
+            played5MinAlerts.delete(boss.id);
+          }
+
+          if (diff <= 1800000) {
+            rowBg = "bg-yellow-950/20 border-yellow-600/50 shadow-md shadow-yellow-950/20";
+            statusBadge = `<span class="bg-yellow-500 text-black text-[10px] font-extrabold px-2 py-0.5 rounded">SOON</span>`;
+            statSoon++;
+          } else {
+            statCooldown++;
+            statusBadge = `<span class="bg-green-950/50 text-green-400 text-[10px] font-semibold px-2 py-0.5 rounded border border-green-800/50">COOLDOWN</span>`;
+          }
+        }
+
+        // แสดงผลรูปภาพบอส
+        const bossImgHtml = boss.image 
+          ? `<img src="${boss.image}" class="w-10 h-10 rounded-xl object-cover border border-gray-700/80 shadow-inner flex-shrink-0">`
+          : `<div class="w-10 h-10 rounded-xl bg-gray-950 border border-gray-800 flex items-center justify-center text-yellow-500 text-lg flex-shrink-0"><i class="fa-solid fa-dragon"></i></div>`;
+
+        // แสดงสถานที่เกิด
+        const locationHtml = boss.location 
+          ? `<span class="text-[11px] text-gray-400 block mt-0.5 truncate"><i class="fa-solid fa-location-dot text-red-400 text-[10px] mr-1"></i>${boss.location}</span>`
+          : '';
+
+        // แสดงปุ่ม "ตาย" และ "บอสบิด" เฉพาะตอนที่บอสเกิด (ALIVE) เท่านั้น
+        const aliveActionButtons = isAlive 
+          ? `<button onclick="setKillNow('${boss.id}')" title="กดเมื่อบอสตาย" class="flex-1 md:flex-initial bg-red-600 hover:bg-red-500 active:scale-95 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition flex items-center justify-center gap-1 shadow-sm shadow-red-600/30">
+               <i class="fa-solid fa-skull"></i> ตาย
+             </button>
+             <button onclick="setBossMiss('${boss.id}')" title="บอสไม่เกิด (นับรอบต่อไป)" class="flex-1 md:flex-initial bg-amber-600 hover:bg-amber-500 active:scale-95 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition flex items-center justify-center gap-1 shadow-sm shadow-amber-600/30">
+               <i class="fa-solid fa-ban"></i> บอสบิด
+             </button>`
+          : '';
+
+        const row = document.createElement('div');
+        row.className = `border rounded-xl p-3 sm:p-4 flex flex-col md:flex-row items-center justify-between gap-3 transition-all duration-200 ${rowBg}`;
+        row.innerHTML = `
+          <!-- ฝั่งซ้าย: รูปภาพ + ข้อมูลบอส + สถานที่ -->
+          <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
+            <div class="flex items-center gap-3 min-w-0">
+              ${bossImgHtml}
+              <div class="min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <h3 class="text-base font-bold text-white tracking-wide truncate">${displayTitle}</h3>
+                  <span class="bg-yellow-500/10 text-yellow-400 border border-yellow-500/30 text-[10px] font-extrabold px-1.5 py-0.5 rounded">
+                    ${boss.chance || 100}%
+                  </span>
+                  ${statusBadge}
+                </div>
+                ${locationHtml}
+              </div>
+            </div>
+            <div class="text-xs text-gray-400 md:hidden font-mono flex-shrink-0">
+              ${nextSpawnTimeStr} น.
+            </div>
+          </div>
+
+          <!-- ฝั่งกลาง: ข้อมูลเวลาเกิด & ตัวนับถอยหลัง -->
+          <div class="flex items-center gap-4 w-full md:w-auto justify-between md:justify-center">
+            <div class="hidden md:block text-right text-xs text-gray-400">
+              <span class="block text-[10px] text-gray-500">คูลดาวน์ ${boss.respawnHours} ชม.</span>
+              <span>เกิดถัดไป: <strong class="text-yellow-400">${nextSpawnTimeStr} น.</strong></span>
+            </div>
+
+            <div class="px-4 py-1.5 bg-gray-950/80 rounded-lg border border-gray-800 min-w-[120px] text-center w-full md:w-auto">
+              <span class="text-lg font-mono font-black tracking-wider ${diff <= 0 && lastKilled ? 'text-red-500 animate-pulse' : (diff <= 1800000 && lastKilled ? 'text-yellow-400' : 'text-green-400')}">
+                ${countdownText}
+              </span>
+            </div>
+          </div>
+
+          <!-- ฝั่งขวา: ปุ่มจัดการเวลา -->
+          <div class="flex items-center gap-1.5 w-full md:w-auto justify-end">
+            ${aliveActionButtons}
+            <button onclick="setCustomKillTime('${boss.id}')" title="ระบุเวลาตายเอง" class="bg-gray-800 hover:bg-gray-700 active:scale-95 text-gray-200 px-3 py-1.5 rounded-lg text-xs transition border border-gray-700 flex items-center justify-center gap-1">
+              <i class="fa-solid fa-clock"></i> แก้ไข
+            </button>
+          </div>
+        `;
+        container.appendChild(row);
+      });
+
+      document.getElementById('stat-total').innerText = statTotal;
+      document.getElementById('stat-alive').innerText = statAlive;
+      document.getElementById('stat-soon').innerText = statSoon;
+      document.getElementById('stat-cooldown').innerText = statCooldown;
+    }
+
+    setInterval(renderBosses, 1000);
+  </script>
+</body>
+</html>
