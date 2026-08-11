@@ -281,6 +281,10 @@
 
     const played5MinAlerts = new Set();
     const playedSpawnAlerts = new Set();
+    
+    // เพิ่ม Set สำหรับจัดการส่ง Discord เพียงครั้งเดียว
+    const sentDiscord5MinAlerts = new Set();
+    const sentDiscordSpawnAlerts = new Set();
 
     // 1. ระบบ Browser Notification
     function requestNotificationPermission() {
@@ -367,6 +371,8 @@
 
       played5MinAlerts.clear();
       playedSpawnAlerts.clear();
+      sentDiscord5MinAlerts.clear();
+      sentDiscordSpawnAlerts.clear();
 
       bindFirebaseListeners();
     }
@@ -580,6 +586,9 @@
       const now = Date.now();
       played5MinAlerts.delete(id);
       playedSpawnAlerts.delete(id);
+      sentDiscord5MinAlerts.delete(id);
+      sentDiscordSpawnAlerts.delete(id);
+
       db.ref(`servers/${currentServer}/bosses/${id}`).update({ lastKilled: now });
       sendDiscordAlert(localBosses[id], now, "KILLED");
     }
@@ -594,6 +603,8 @@
       
       played5MinAlerts.delete(id);
       playedSpawnAlerts.delete(id);
+      sentDiscord5MinAlerts.delete(id);
+      sentDiscordSpawnAlerts.delete(id);
 
       db.ref(`servers/${currentServer}/bosses/${id}`).update({ lastKilled: newLastKilled });
       sendDiscordAlert(boss, newLastKilled, "MISS");
@@ -611,6 +622,8 @@
 
       played5MinAlerts.delete(id);
       playedSpawnAlerts.delete(id);
+      sentDiscord5MinAlerts.delete(id);
+      sentDiscordSpawnAlerts.delete(id);
 
       db.ref(`servers/${currentServer}/bosses/${id}`).update({ lastKilled: target.getTime() });
       sendDiscordAlert(localBosses[id], target.getTime(), "CUSTOM");
@@ -762,11 +775,15 @@
           countdownText = "BOSS ALIVE";
           statAlive++;
 
+          // ส่ง Discord เมื่อบอสเกิด (ส่งครั้งเดียวเท่านั้น)
+          if (!sentDiscordSpawnAlerts.has(boss.id)) {
+            sentDiscordSpawnAlerts.add(boss.id);
+            sendDiscordAlert(boss, lastKilled, "SPAWNED");
+          }
+
           if (!playedSpawnAlerts.has(boss.id)) {
             playedSpawnAlerts.add(boss.id);
 
-            sendDiscordAlert(boss, lastKilled, "SPAWNED");
-            
             triggerBrowserNotification(
               `🚨 [${currentServer}] Boss Alive!`,
               `${displayTitle} has spawned now!`
@@ -775,6 +792,7 @@
           }
         } else {
           playedSpawnAlerts.delete(boss.id);
+          sentDiscordSpawnAlerts.delete(boss.id);
 
           const hours = Math.floor(diff / 3600000);
           const minutes = Math.floor((diff % 3600000) / 60000);
@@ -785,11 +803,15 @@
           nextSpawnTimeStr = spawnDate.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
 
           if (diff <= 5 * 60 * 1000) {
+            // ส่ง Discord เมื่อเตือน 5 นาที (ส่งครั้งเดียวเท่านั้น)
+            if (!sentDiscord5MinAlerts.has(boss.id)) {
+              sentDiscord5MinAlerts.add(boss.id);
+              sendDiscordAlert(boss, lastKilled, "SPAWN_SOON");
+            }
+
             if (!played5MinAlerts.has(boss.id)) {
               played5MinAlerts.add(boss.id);
 
-              sendDiscordAlert(boss, lastKilled, "SPAWN_SOON");
-              
               triggerBrowserNotification(
                 `⚠️ [${currentServer}] Boss Respawn Soon!`,
                 `${displayTitle} will spawn in 5 minutes.`
@@ -798,6 +820,7 @@
             }
           } else {
             played5MinAlerts.delete(boss.id);
+            sentDiscord5MinAlerts.delete(boss.id);
           }
 
           if (diff <= 1800000) {
