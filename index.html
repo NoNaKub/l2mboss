@@ -136,7 +136,7 @@
     </div>
   </main>
 
-  <!-- MODAL 1: เมนูจัดการข้อมูลบอส (CRUD) -->
+  <!-- MODAL 1: เมนูจัดการข้อมูลบอส (CRUD + Import) -->
   <div id="manage-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
       
@@ -150,6 +150,30 @@
       </div>
 
       <div class="p-6 overflow-y-auto space-y-6 flex-1 custom-scrollbar">
+        <!-- Section: นำเข้าข้อมูลบอสจากเซิร์ฟเวอร์อื่น -->
+        <div class="bg-gray-950 p-4 rounded-xl border border-indigo-900/50">
+          <h3 class="text-xs font-bold text-indigo-400 mb-3 flex items-center gap-1.5 uppercase tracking-wider">
+            <i class="fa-solid fa-file-import"></i> นำเข้าข้อมูลบอสจากเซิร์ฟเวอร์อื่น
+          </h3>
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-3">
+            <div class="flex-1">
+              <label class="text-[11px] text-gray-400 block mb-1">เลือกเซิร์ฟเวอร์ต้นทาง</label>
+              <select id="import-source-server" onchange="loadSourceServerBosses()" class="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                <!-- ตัวเลือกเซิร์ฟเวอร์จะถูก Render ผ่าน JavaScript -->
+              </select>
+            </div>
+            <div class="flex items-end">
+              <button onclick="importAllBossesFromSource()" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-4 py-2 rounded-lg transition flex items-center justify-center gap-1.5">
+                <i class="fa-solid fa-cloud-arrow-down"></i> นำเข้าบอสทั้งหมด
+              </button>
+            </div>
+          </div>
+          <!-- รายการบอสให้เลือกนำเข้าทีละตัว -->
+          <div id="import-boss-list-container" class="space-y-2 mt-3 max-h-40 overflow-y-auto custom-scrollbar border-t border-gray-800/60 pt-2">
+            <p class="text-xs text-gray-500 text-center py-2">กำลังโหลดรายการบอสต้นทาง...</p>
+          </div>
+        </div>
+
         <!-- Add/Edit Form -->
         <div class="bg-gray-950 p-4 rounded-xl border border-gray-800">
           <h3 id="form-title" class="text-xs font-bold text-gray-300 mb-3 flex items-center gap-1.5 uppercase tracking-wider">
@@ -310,10 +334,11 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    const defaultBosses = {};
+    const availableServers = ["A10", "Invasion"];
 
     let currentServer = "A10";
     let localBosses = {};
+    let sourceBossesCache = {};
     let isSoundEnabled = false;
     let discordWebhookUrl = "";
     
@@ -490,7 +515,124 @@
         const manageSearch = document.getElementById('manage-search-input');
         if (manageSearch) manageSearch.value = '';
         resetForm();
+        initImportServerDropdown();
       }
+    }
+
+    // --- ฟังก์ชันสำหรับระบบนำเข้าข้อมูลบอสจากเซิร์ฟเวอร์อื่น ---
+    function initImportServerDropdown() {
+      const select = document.getElementById('import-source-server');
+      select.innerHTML = '';
+      const sourceServers = availableServers.filter(s => s !== currentServer);
+      if (sourceServers.length === 0) {
+        select.innerHTML = '<option value="">ไม่มีเซิร์ฟเวอร์อื่นให้เลือก</option>';
+        return;
+      }
+      sourceServers.forEach(srv => {
+        const opt = document.createElement('option');
+        opt.value = srv;
+        opt.innerText = `เซิร์ฟเวอร์ ${srv}`;
+        select.appendChild(opt);
+      });
+      loadSourceServerBosses();
+    }
+
+    function loadSourceServerBosses() {
+      const sourceServer = document.getElementById('import-source-server').value;
+      const container = document.getElementById('import-boss-list-container');
+      if (!sourceServer) {
+        container.innerHTML = '<p class="text-xs text-gray-500 text-center py-2">โปรดเลือกเซิร์ฟเวอร์ต้นทาง</p>';
+        return;
+      }
+      container.innerHTML = '<p class="text-xs text-gray-500 text-center py-2"><i class="fa-solid fa-spinner fa-spin"></i> กำลังดึงข้อมูลบอส...</p>';
+
+      db.ref(`servers/${sourceServer}/bosses`).once('value').then(snapshot => {
+        sourceBossesCache = snapshot.val() || {};
+        renderSourceBossesList();
+      }).catch(err => {
+        container.innerHTML = '<p class="text-xs text-red-400 text-center py-2">เกิดข้อผิดพลาดในการดึงข้อมูล</p>';
+      });
+    }
+
+    function renderSourceBossesList() {
+      const container = document.getElementById('import-boss-list-container');
+      container.innerHTML = '';
+      const keys = Object.keys(sourceBossesCache);
+
+      if (keys.length === 0) {
+        container.innerHTML = '<p class="text-xs text-gray-500 text-center py-2">ไม่พบข้อมูลบอสในเซิร์ฟเวอร์ต้นทางที่เลือก</p>';
+        return;
+      }
+
+      keys.forEach(id => {
+        const boss = sourceBossesCache[id];
+        const displayName = boss.nameTh ? `${boss.name} (${boss.nameTh})` : boss.name;
+
+        const div = document.createElement('div');
+        div.className = "flex justify-between items-center bg-gray-900/80 p-2 rounded border border-gray-800 text-xs";
+        div.innerHTML = `
+          <div class="truncate pr-2">
+            <span class="font-bold text-white">${displayName}</span>
+            <span class="text-gray-400 text-[11px] block truncate">คูลดาวน์ ${boss.respawnHours} ชม. ${boss.location ? `• 📍 ${boss.location}` : ''}</span>
+          </div>
+          <button onclick="importSingleBoss('${id}')" class="bg-indigo-600/30 hover:bg-indigo-600/60 text-indigo-300 border border-indigo-500/30 px-2.5 py-1 rounded text-[11px] font-semibold transition flex-shrink-0 flex items-center gap-1">
+            <i class="fa-solid fa-plus"></i> เพิ่มตัวนี้
+          </button>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function importSingleBoss(bossId) {
+      const boss = sourceBossesCache[bossId];
+      if (!boss) return;
+
+      const newId = 'b_' + Date.now();
+      const bossData = {
+        name: boss.name || '',
+        nameTh: boss.nameTh || '',
+        respawnHours: boss.respawnHours || 0,
+        chance: boss.chance || 100,
+        location: boss.location || '',
+        image: boss.image || '',
+        lastKilled: 0
+      };
+
+      db.ref(`servers/${currentServer}/bosses/${newId}`).set(bossData)
+        .then(() => alert(`นำเข้าบอส "${boss.name}" สำเร็จ!`))
+        .catch(err => alert("เกิดข้อผิดพลาดในการนำเข้าข้อมูล: " + err.message));
+    }
+
+    function importAllBossesFromSource() {
+      const keys = Object.keys(sourceBossesCache);
+      if (keys.length === 0) {
+        alert("ไม่มีข้อมูลบอสให้ทำการนำเข้า");
+        return;
+      }
+
+      const sourceServer = document.getElementById('import-source-server').value;
+      if (!confirm(`ต้องการนำเข้าบอสทั้งหมด (${keys.length} ตัว) จากเซิร์ฟเวอร์ ${sourceServer} เข้าสู่ ${currentServer} ใช่หรือไม่?`)) return;
+
+      const updates = {};
+      let timestampCounter = Date.now();
+
+      keys.forEach(id => {
+        const boss = sourceBossesCache[id];
+        const newId = 'b_' + timestampCounter++;
+        updates[`servers/${currentServer}/bosses/${newId}`] = {
+          name: boss.name || '',
+          nameTh: boss.nameTh || '',
+          respawnHours: boss.respawnHours || 0,
+          chance: boss.chance || 100,
+          location: boss.location || '',
+          image: boss.image || '',
+          lastKilled: 0
+        };
+      });
+
+      db.ref().update(updates)
+        .then(() => alert(`นำเข้าบอสทั้งหมดสำเร็จแล้ว (${keys.length} ตัว)`))
+        .catch(err => alert("เกิดข้อผิดพลาดในการนำเข้าข้อมูล: " + err.message));
     }
 
     function toggleDiscordModal(show) {
