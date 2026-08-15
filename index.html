@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+code = """<!DOCTYPE html>
 <html lang="th" class="dark">
 <head>
   <meta charset="UTF-8">
@@ -52,6 +52,9 @@
         
         <!-- ปุ่มเลือกเซิร์ฟเวอร์ -->
         <div class="flex items-center bg-gray-950 border border-gray-800 rounded-lg p-1 gap-1">
+          <button id="btn-server-A9" onclick="changeServer('A9')" class="px-3 py-1 rounded-md text-xs font-bold text-gray-400 hover:text-white transition-all hover:bg-gray-800">
+            A9
+          </button>
           <button id="btn-server-A10" onclick="changeServer('A10')" class="px-3 py-1 rounded-md text-xs font-bold transition-all bg-yellow-500 text-black shadow-md">
             A10
           </button>
@@ -334,7 +337,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    const availableServers = ["A10", "Invasion"];
+    const availableServers = ["A9", "A10", "Invasion"];
 
     let currentServer = "A10";
     let localBosses = {};
@@ -424,16 +427,16 @@
       document.getElementById('modal-server-name').innerText = currentServer;
       document.getElementById('discord-server-name').innerText = currentServer;
 
-      const btnA10 = document.getElementById('btn-server-A10');
-      const btnInvasion = document.getElementById('btn-server-Invasion');
-
-      if (serverName === 'A10') {
-        btnA10.className = "px-3 py-1 rounded-md text-xs font-bold transition-all bg-yellow-500 text-black shadow-md";
-        btnInvasion.className = "px-3 py-1 rounded-md text-xs font-bold text-gray-400 hover:text-white transition-all hover:bg-gray-800";
-      } else {
-        btnInvasion.className = "px-3 py-1 rounded-md text-xs font-bold transition-all bg-yellow-500 text-black shadow-md";
-        btnA10.className = "px-3 py-1 rounded-md text-xs font-bold text-gray-400 hover:text-white transition-all hover:bg-gray-800";
-      }
+      availableServers.forEach(srv => {
+        const btn = document.getElementById(`btn-server-${srv}`);
+        if (btn) {
+          if (srv === serverName) {
+            btn.className = "px-3 py-1 rounded-md text-xs font-bold transition-all bg-yellow-500 text-black shadow-md";
+          } else {
+            btn.className = "px-3 py-1 rounded-md text-xs font-bold text-gray-400 hover:text-white transition-all hover:bg-gray-800";
+          }
+        }
+      });
 
       played5MinAlerts.clear();
       playedSpawnAlerts.clear();
@@ -1169,3 +1172,7 @@
   </script>
 </body>
 </html>
+"""
+
+with open("index.html", "w", encoding="utf-8") as f:
+    f.write(code)
