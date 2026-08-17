@@ -75,11 +75,6 @@
           <span id="sound-text">Mute Voice</span>
         </button>
 
-        <!-- Discord Button -->
-        <button onclick="toggleDiscordModal(true)" class="bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 border border-indigo-500/30 px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5">
-          <i class="fa-brands fa-discord"></i> Discord
-        </button>
-
         <!-- ปุ่มรีเซ็ตเวลาบอสทั้งหมด -->
         <button onclick="resetAllBossesTime()" title="รีเซ็ตเวลาบอสทั้งหมดในเซิร์ฟเวอร์นี้" class="bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-800/50 px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5">
           <i class="fa-solid fa-rotate-left"></i> รีเซ็ตเวลาบอสทั้งหมด
@@ -268,34 +263,6 @@
     </div>
   </div>
 
-  <!-- MODAL 2: ตั้งค่า Discord Webhook -->
-  <div id="discord-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-md p-6 shadow-2xl">
-      <div class="flex justify-between items-center mb-4">
-        <h2 class="text-base font-bold text-indigo-400 flex items-center gap-2">
-          <i class="fa-brands fa-discord"></i> Discord Webhook Integration
-        </h2>
-        <button onclick="toggleDiscordModal(false)" class="text-gray-400 hover:text-white">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-      </div>
-
-      <p class="text-xs text-gray-400 mb-4">ใส่ Discord Webhook URL ของเซิร์ฟเวอร์ <strong id="discord-server-name" class="text-yellow-400">A10</strong> เพื่อรับแจ้งเตือนบอส</p>
-
-      <div class="space-y-3 mb-6">
-        <div>
-          <label class="text-[11px] text-gray-400 block mb-1">Webhook URL</label>
-          <input type="text" id="discord-url" placeholder="https://discord.com/api/webhooks/..." class="w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
-        </div>
-      </div>
-
-      <div class="flex justify-end gap-2">
-        <button onclick="testDiscordWebhook()" class="bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs px-3 py-2 rounded-lg transition">ทดสอบส่ง</button>
-        <button onclick="saveDiscordWebhook()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-4 py-2 rounded-lg transition">บันทึกตั้งค่า</button>
-      </div>
-    </div>
-  </div>
-
   <!-- MODAL 3: ปรับแต่งแก้ไขเวลาตายของบอส -->
   <div id="time-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-md p-6 shadow-2xl">
@@ -358,17 +325,11 @@
     let localBosses = {};
     let sourceBossesCache = {};
     let isSoundEnabled = false;
-    let discordWebhookUrl = "";
     
     let bossesRef = null;
-    let settingsRef = null;
 
     const played5MinAlerts = new Set();
     const playedSpawnAlerts = new Set();
-    
-    // เพิ่ม Set สำหรับจัดการส่ง Discord เพียงครั้งเดียว
-    const sentDiscord5MinAlerts = new Set();
-    const sentDiscordSpawnAlerts = new Set();
 
     // ฟังก์ชันช่วยกำหนดสไตล์ของแท็กดรอปไอเทมตามสีที่เลือก
     function getDropTagStyle(color) {
@@ -455,7 +416,6 @@
       currentServer = serverName;
       document.getElementById('current-server-display').innerText = currentServer;
       document.getElementById('modal-server-name').innerText = currentServer;
-      document.getElementById('discord-server-name').innerText = currentServer;
 
       availableServers.forEach(srv => {
         const btn = document.getElementById(`btn-server-${srv}`);
@@ -470,8 +430,6 @@
 
       played5MinAlerts.clear();
       playedSpawnAlerts.clear();
-      sentDiscord5MinAlerts.clear();
-      sentDiscordSpawnAlerts.clear();
 
       bindFirebaseListeners();
     }
@@ -479,21 +437,14 @@
     // ผูก Realtime Database
     function bindFirebaseListeners() {
       if (bossesRef) bossesRef.off();
-      if (settingsRef) settingsRef.off();
 
       bossesRef = db.ref(`servers/${currentServer}/bosses`);
-      settingsRef = db.ref(`servers/${currentServer}/settings`);
 
       bossesRef.on('value', (snapshot) => {
         const data = snapshot.val();
         localBosses = data || {};
         renderBosses();
         renderManageList();
-      });
-
-      settingsRef.child('discordWebhook').on('value', (snapshot) => {
-        discordWebhookUrl = snapshot.val() || "";
-        document.getElementById('discord-url').value = discordWebhookUrl;
       });
     }
 
@@ -672,10 +623,6 @@
         .catch(err => alert("เกิดข้อผิดพลาดในการนำเข้าข้อมูล: " + err.message));
     }
 
-    function toggleDiscordModal(show) {
-      document.getElementById('discord-modal').classList.toggle('hidden', !show);
-    }
-
     function saveBoss() {
       const editId = document.getElementById('edit-boss-id').value;
       const name = document.getElementById('boss-name').value.trim();
@@ -819,11 +766,8 @@
       const now = Date.now();
       played5MinAlerts.delete(id);
       playedSpawnAlerts.delete(id);
-      sentDiscord5MinAlerts.delete(id);
-      sentDiscordSpawnAlerts.delete(id);
 
       db.ref(`servers/${currentServer}/bosses/${id}`).update({ lastKilled: now });
-      sendDiscordAlert(localBosses[id], now, "KILLED");
     }
 
     function setBossMiss(id) {
@@ -836,11 +780,8 @@
       
       played5MinAlerts.delete(id);
       playedSpawnAlerts.delete(id);
-      sentDiscord5MinAlerts.delete(id);
-      sentDiscordSpawnAlerts.delete(id);
 
       db.ref(`servers/${currentServer}/bosses/${id}`).update({ lastKilled: newLastKilled });
-      sendDiscordAlert(boss, newLastKilled, "MISS");
     }
 
     // ปุ่มบอสเกิด: เปลี่ยนสถานะบอสเป็น ALIVE โดยย้อนเวลา lastKilled ให้เกิด ณ ปัจจุบัน พอดี
@@ -853,8 +794,6 @@
 
       played5MinAlerts.delete(id);
       playedSpawnAlerts.delete(id);
-      sentDiscord5MinAlerts.delete(id);
-      sentDiscordSpawnAlerts.delete(id);
 
       db.ref(`servers/${currentServer}/bosses/${id}`).update({ lastKilled: aliveLastKilled });
     }
@@ -906,11 +845,8 @@
 
       played5MinAlerts.delete(id);
       playedSpawnAlerts.delete(id);
-      sentDiscord5MinAlerts.delete(id);
-      sentDiscordSpawnAlerts.delete(id);
 
       db.ref(`servers/${currentServer}/bosses/${id}`).update({ lastKilled: targetTimestamp });
-      sendDiscordAlert(localBosses[id], targetTimestamp, "CUSTOM");
       toggleTimeModal(false);
     }
 
@@ -923,69 +859,6 @@
         });
         db.ref().update(updates);
       }
-    }
-
-    // Discord Notifications
-    function saveDiscordWebhook() {
-      const url = document.getElementById('discord-url').value.trim();
-      settingsRef.child('discordWebhook').set(url);
-      toggleDiscordModal(false);
-    }
-
-    function testDiscordWebhook() {
-      const url = document.getElementById('discord-url').value.trim();
-      if (!url) return alert("กรุณาใส่ Webhook URL");
-      fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: `⚔️ **[L2M Boss Tracker - ${currentServer}]** ทดสอบระบบแจ้งเตือน Discord สำเร็จ!` })
-      }).then(() => alert("ส่งข้อความทดสอบสำเร็จ")).catch(() => alert("เกิดข้อผิดพลาด"));
-    }
-
-    function sendDiscordAlert(boss, killTime, type = "KILLED") {
-      if (!discordWebhookUrl || !boss) return;
-      const nextSpawn = new Date(killTime + (boss.respawnHours * 3600 * 1000));
-      const spawnStr = nextSpawn.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-      
-      const bossDisplayName = boss.nameTh ? `${boss.name} (${boss.nameTh})` : boss.name;
-
-      let title = `💀 [Server ${currentServer}] บันทึกบอสตาย: ${bossDisplayName}`;
-      if (type === "MISS") title = `🚫 [Server ${currentServer}] บอสไม่เกิด (MISS): ${bossDisplayName} (นับรอบถัดไป)`;
-      if (type === "SPAWN_SOON") title = `⚠️ [Server ${currentServer}] [เตือนล่วงหน้า 5 นาที] บอสใกล้เกิด: ${bossDisplayName}`;
-      if (type === "SPAWNED") title = `🚨 [Server ${currentServer}] [บอสเกิดแล้ว!] ALIVE: ${bossDisplayName}`;
-
-      const fields = [
-        { name: "เซิร์ฟเวอร์", value: currentServer, inline: true },
-        { name: "โอกาสเกิด", value: `${boss.chance || 100}%`, inline: true },
-        { name: "เวลาเกิด", value: `${boss.respawnHours} ชม.`, inline: true }
-      ];
-
-      if (boss.dropTag) {
-        fields.push({ name: "ไอเทมดรอป", value: boss.dropTag, inline: true });
-      }
-
-      if (boss.location) {
-        fields.push({ name: "สถานที่เกิด", value: boss.location, inline: true });
-      }
-
-      fields.push({ name: "เวลาเกิดถัดไป", value: `**${spawnStr} น.**`, inline: false });
-
-      const embed = {
-        title: title,
-        color: type === "SPAWNED" ? 15158332 : (type === "SPAWN_SOON" ? 16766720 : 3447003),
-        fields: fields,
-        timestamp: new Date().toISOString()
-      };
-
-      if (boss.image && !boss.image.startsWith('data:image')) {
-        embed.thumbnail = { url: boss.image };
-      }
-
-      fetch(discordWebhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ embeds: [embed] })
-      });
     }
 
     function filterBosses() { renderBosses(); }
@@ -1015,6 +888,20 @@
         id,
         ...localBosses[id]
       }));
+
+      // ตรวจสอบบอสที่อยู่ในสถานะเกิดเกิน 10 นาทีแล้วยังไม่มีการเปลี่ยนสถานะ ให้ปรับเป็นบอสบิด (MISS / เปลี่ยนสถานะเป็นไม่เกิด/นับรอบถัดไป)
+      const now = Date.now();
+      bossArray.forEach(boss => {
+        if (boss.lastKilled && boss.lastKilled > 0) {
+          const respawnMs = boss.respawnHours * 3600 * 1000;
+          const spawnTime = boss.lastKilled + respawnMs;
+          const aliveTime = now - spawnTime;
+          // ถ้าบอสเกิดแล้ว (aliveTime >= 0) และเกิดเกิน 10 นาที (10 * 60 * 1000 = 600000 ms)
+          if (aliveTime >= 10 * 60 * 1000) {
+            setBossMiss(boss.id);
+          }
+        }
+      });
 
       bossArray = bossArray.filter(b => {
         const nameMatch = b.name && b.name.toLowerCase().includes(searchKeyword);
@@ -1079,12 +966,6 @@
           countdownText = "BOSS ALIVE";
           statAlive++;
 
-          // ส่ง Discord เมื่อบอสเกิด (ส่งครั้งเดียวเท่านั้น)
-          if (!sentDiscordSpawnAlerts.has(boss.id)) {
-            sentDiscordSpawnAlerts.add(boss.id);
-            sendDiscordAlert(boss, lastKilled, "SPAWNED");
-          }
-
           if (!playedSpawnAlerts.has(boss.id)) {
             playedSpawnAlerts.add(boss.id);
 
@@ -1096,7 +977,6 @@
           }
         } else {
           playedSpawnAlerts.delete(boss.id);
-          sentDiscordSpawnAlerts.delete(boss.id);
 
           const hours = Math.floor(diff / 3600000);
           const minutes = Math.floor((diff % 3600000) / 60000);
@@ -1107,12 +987,6 @@
           nextSpawnTimeStr = spawnDate.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
 
           if (diff <= 5 * 60 * 1000) {
-            // ส่ง Discord เมื่อเตือน 5 นาที (ส่งครั้งเดียวเท่านั้น)
-            if (!sentDiscord5MinAlerts.has(boss.id)) {
-              sentDiscord5MinAlerts.add(boss.id);
-              sendDiscordAlert(boss, lastKilled, "SPAWN_SOON");
-            }
-
             if (!played5MinAlerts.has(boss.id)) {
               played5MinAlerts.add(boss.id);
 
@@ -1124,7 +998,6 @@
             }
           } else {
             played5MinAlerts.delete(boss.id);
-            sentDiscord5MinAlerts.delete(boss.id);
           }
 
           if (diff <= 1800000) {
