@@ -889,20 +889,6 @@
         ...localBosses[id]
       }));
 
-      // ตรวจสอบบอสที่อยู่ในสถานะเกิดเกิน 10 นาทีแล้วยังไม่มีการเปลี่ยนสถานะ ให้ปรับเป็นบอสบิด (MISS / เปลี่ยนสถานะเป็นไม่เกิด/นับรอบถัดไป)
-      const now = Date.now();
-      bossArray.forEach(boss => {
-        if (boss.lastKilled && boss.lastKilled > 0) {
-          const respawnMs = boss.respawnHours * 3600 * 1000;
-          const spawnTime = boss.lastKilled + respawnMs;
-          const aliveTime = now - spawnTime;
-          // ถ้าบอสเกิดแล้ว (aliveTime >= 0) และเกิดเกิน 10 นาที (10 * 60 * 1000 = 600000 ms)
-          if (aliveTime >= 10 * 60 * 1000) {
-            setBossMiss(boss.id);
-          }
-        }
-      });
-
       bossArray = bossArray.filter(b => {
         const nameMatch = b.name && b.name.toLowerCase().includes(searchKeyword);
         const nameThMatch = b.nameTh && b.nameTh.toLowerCase().includes(searchKeyword);
