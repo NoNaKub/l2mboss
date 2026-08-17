@@ -194,7 +194,7 @@
               <input type="text" id="boss-name-th" placeholder="เช่น ควีนแอนท์" class="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-yellow-500">
             </div>
             <div>
-              <label class="text-[11px] text-gray-400 block mb-1">คูลดาวน์ (ชั่วโมง)</label>
+              <label class="text-[11px] text-gray-400 block mb-1">ระยะเวลาเกิด (ชั่วโมง)</label>
               <input type="number" id="boss-respawn" step="0.1" placeholder="เช่น 6 หรือ 12.5" class="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-yellow-500">
             </div>
             <div>
@@ -203,21 +203,36 @@
             </div>
           </div>
 
-          <!-- สถานที่เกิด และ ตัวเลือกอัปโหลดรูปภาพ -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+          <!-- สถานที่เกิด และ แท็กไอเทมดรอป + สี -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
             <div>
               <label class="text-[11px] text-gray-400 block mb-1">สถานที่บอสเกิด</label>
               <input type="text" id="boss-location" placeholder="เช่น รังมด ชั้น 3" class="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-yellow-500">
             </div>
             <div>
-              <label class="text-[11px] text-gray-400 block mb-1">รูปภาพบอส (เลือกไฟล์ หรือ วาง URL)</label>
-              <div class="flex gap-2">
-                <input type="text" id="boss-image" oninput="previewImageInput()" placeholder="วาง Image URL หรือ อัปโหลด..." class="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-yellow-500">
-                <label class="bg-gray-800 hover:bg-gray-700 text-yellow-400 border border-gray-700 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer flex items-center gap-1 flex-shrink-0">
-                  <i class="fa-solid fa-upload"></i> อัปไฟล์
-                  <input type="file" id="boss-image-file" accept="image/*" onchange="handleFileUpload(event)" class="hidden">
-                </label>
-              </div>
+              <label class="text-[11px] text-gray-400 block mb-1">แท็กไอเทมดรอป</label>
+              <input type="text" id="boss-drop-tag" placeholder="เช่น แหวนควีน, ดาบตำนาน" class="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-yellow-500">
+            </div>
+            <div>
+              <label class="text-[11px] text-gray-400 block mb-1">สีตัวอักษรแท็ก</label>
+              <select id="boss-drop-color" class="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-yellow-500">
+                <option value="blue">ฟ้า (Blue)</option>
+                <option value="red">แดง (Red)</option>
+                <option value="purple">ม่วง (Purple)</option>
+                <option value="gold">ทอง (Gold)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- ตัวเลือกอัปโหลดรูปภาพ -->
+          <div class="mb-3">
+            <label class="text-[11px] text-gray-400 block mb-1">รูปภาพบอส (เลือกไฟล์ หรือ วาง URL)</label>
+            <div class="flex gap-2">
+              <input type="text" id="boss-image" oninput="previewImageInput()" placeholder="วาง Image URL หรือ อัปโหลด..." class="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-yellow-500">
+              <label class="bg-gray-800 hover:bg-gray-700 text-yellow-400 border border-gray-700 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer flex items-center gap-1 flex-shrink-0">
+                <i class="fa-solid fa-upload"></i> อัปไฟล์
+                <input type="file" id="boss-image-file" accept="image/*" onchange="handleFileUpload(event)" class="hidden">
+              </label>
             </div>
           </div>
 
@@ -354,6 +369,21 @@
     // เพิ่ม Set สำหรับจัดการส่ง Discord เพียงครั้งเดียว
     const sentDiscord5MinAlerts = new Set();
     const sentDiscordSpawnAlerts = new Set();
+
+    // ฟังก์ชันช่วยกำหนดสไตล์ของแท็กดรอปไอเทมตามสีที่เลือก
+    function getDropTagStyle(color) {
+      switch (color) {
+        case 'red':
+          return 'bg-red-500/10 text-red-400 border-red-500/30';
+        case 'purple':
+          return 'bg-purple-500/10 text-purple-400 border-purple-500/30';
+        case 'gold':
+          return 'bg-amber-500/10 text-amber-300 border-amber-500/30';
+        case 'blue':
+        default:
+          return 'bg-blue-500/10 text-blue-400 border-blue-500/30';
+      }
+    }
 
     // 1. ระบบ Browser Notification
     function requestNotificationPermission() {
@@ -576,7 +606,7 @@
         div.innerHTML = `
           <div class="truncate pr-2">
             <span class="font-bold text-white">${displayName}</span>
-            <span class="text-gray-400 text-[11px] block truncate">คูลดาวน์ ${boss.respawnHours} ชม. ${boss.location ? `• 📍 ${boss.location}` : ''}</span>
+            <span class="text-gray-400 text-[11px] block truncate">ระยะเวลาเกิด ${boss.respawnHours} ชม. ${boss.location ? `• 📍 ${boss.location}` : ''}</span>
           </div>
           <button onclick="importSingleBoss('${id}')" class="bg-indigo-600/30 hover:bg-indigo-600/60 text-indigo-300 border border-indigo-500/30 px-2.5 py-1 rounded text-[11px] font-semibold transition flex-shrink-0 flex items-center gap-1">
             <i class="fa-solid fa-plus"></i> เพิ่มตัวนี้
@@ -597,6 +627,8 @@
         respawnHours: boss.respawnHours || 0,
         chance: boss.chance || 100,
         location: boss.location || '',
+        dropTag: boss.dropTag || '',
+        dropColor: boss.dropColor || 'blue',
         image: boss.image || '',
         lastKilled: 0
       };
@@ -628,6 +660,8 @@
           respawnHours: boss.respawnHours || 0,
           chance: boss.chance || 100,
           location: boss.location || '',
+          dropTag: boss.dropTag || '',
+          dropColor: boss.dropColor || 'blue',
           image: boss.image || '',
           lastKilled: 0
         };
@@ -649,6 +683,8 @@
       const respawnHours = parseFloat(document.getElementById('boss-respawn').value);
       const chance = parseInt(document.getElementById('boss-chance').value) || 100;
       const location = document.getElementById('boss-location').value.trim();
+      const dropTag = document.getElementById('boss-drop-tag').value.trim();
+      const dropColor = document.getElementById('boss-drop-color').value;
       const image = document.getElementById('boss-image').value.trim();
 
       if (!name || isNaN(respawnHours) || respawnHours <= 0) {
@@ -656,7 +692,7 @@
         return;
       }
 
-      const bossData = { name, nameTh, respawnHours, chance, location, image };
+      const bossData = { name, nameTh, respawnHours, chance, location, dropTag, dropColor, image };
 
       if (editId) {
         db.ref(`servers/${currentServer}/bosses/${editId}`).update(bossData);
@@ -676,6 +712,8 @@
       document.getElementById('boss-respawn').value = boss.respawnHours;
       document.getElementById('boss-chance').value = boss.chance || 100;
       document.getElementById('boss-location').value = boss.location || '';
+      document.getElementById('boss-drop-tag').value = boss.dropTag || '';
+      document.getElementById('boss-drop-color').value = boss.dropColor || 'blue';
       document.getElementById('boss-image').value = boss.image || '';
 
       if (boss.image) {
@@ -701,6 +739,8 @@
       document.getElementById('boss-respawn').value = '';
       document.getElementById('boss-chance').value = '100';
       document.getElementById('boss-location').value = '';
+      document.getElementById('boss-drop-tag').value = '';
+      document.getElementById('boss-drop-color').value = 'blue';
       clearBossImage();
       document.getElementById('form-title').innerHTML = `<i class="fa-solid fa-plus text-yellow-500"></i> เพิ่มบอสใหม่`;
       document.getElementById('cancel-edit-btn').classList.add('hidden');
@@ -720,14 +760,15 @@
         return;
       }
 
-      // กรองรายการบอสในเมนูจัดการตามชื่อบอส (อังกฤษ/ไทย) หรือสถานที่
+      // กรองรายการบอสในเมนูจัดการตามชื่อบอส (อังกฤษ/ไทย) หรือสถานที่ หรือแท็กดรอป
       if (searchKeyword) {
         bossKeys = bossKeys.filter(id => {
           const boss = localBosses[id];
           const nameMatch = boss.name && boss.name.toLowerCase().includes(searchKeyword);
           const nameThMatch = boss.nameTh && boss.nameTh.toLowerCase().includes(searchKeyword);
           const locationMatch = boss.location && boss.location.toLowerCase().includes(searchKeyword);
-          return nameMatch || nameThMatch || locationMatch;
+          const dropMatch = boss.dropTag && boss.dropTag.toLowerCase().includes(searchKeyword);
+          return nameMatch || nameThMatch || locationMatch || dropMatch;
         });
       }
 
@@ -747,14 +788,20 @@
 
         const displayName = boss.nameTh ? `${boss.name} (${boss.nameTh})` : boss.name;
 
+        const dropTagHtml = boss.dropTag 
+          ? `<span class="border text-[10px] font-bold px-1.5 py-0.5 rounded ml-1 ${getDropTagStyle(boss.dropColor)}"><i class="fa-solid fa-gift mr-1"></i>${boss.dropTag}</span>` 
+          : '';
+
         row.innerHTML = `
           <div class="flex items-center gap-2.5 overflow-hidden">
             ${bossImg}
             <div class="truncate">
               <span class="font-bold text-white">${displayName}</span>
               <span class="text-yellow-500 ml-1">(${boss.chance || 100}%)</span>
+              <span class="text-gray-400 text-[10px] ml-1">ระยะเวลาเกิด ${boss.respawnHours} ชม.</span>
+              ${dropTagHtml}
               <span class="text-gray-500 block text-[11px] truncate">
-                เกิดทุก ${boss.respawnHours} ชม. ${boss.location ? `• 📍 ${boss.location}` : ''}
+                ${boss.location ? `📍 ${boss.location}` : ''}
               </span>
             </div>
           </div>
@@ -910,8 +957,12 @@
       const fields = [
         { name: "เซิร์ฟเวอร์", value: currentServer, inline: true },
         { name: "โอกาสเกิด", value: `${boss.chance || 100}%`, inline: true },
-        { name: "คูลดาวน์", value: `${boss.respawnHours} ชม.`, inline: true }
+        { name: "ระยะเวลาเกิด", value: `${boss.respawnHours} ชม.`, inline: true }
       ];
+
+      if (boss.dropTag) {
+        fields.push({ name: "ไอเทมดรอป", value: boss.dropTag, inline: true });
+      }
 
       if (boss.location) {
         fields.push({ name: "สถานที่เกิด", value: boss.location, inline: true });
@@ -969,7 +1020,8 @@
         const nameMatch = b.name && b.name.toLowerCase().includes(searchKeyword);
         const nameThMatch = b.nameTh && b.nameTh.toLowerCase().includes(searchKeyword);
         const locMatch = b.location && b.location.toLowerCase().includes(searchKeyword);
-        return nameMatch || nameThMatch || locMatch;
+        const dropMatch = b.dropTag && b.dropTag.toLowerCase().includes(searchKeyword);
+        return nameMatch || nameThMatch || locMatch || dropMatch;
       });
 
       if (bossArray.length === 0) {
@@ -1095,6 +1147,11 @@
           ? `<span class="text-[11px] text-gray-400 block mt-0.5 truncate"><i class="fa-solid fa-location-dot text-red-400 text-[10px] mr-1"></i>${boss.location}</span>`
           : '';
 
+        // แสดงแท็กไอเทมดรอป
+        const dropTagHtml = boss.dropTag 
+          ? `<span class="border text-[10px] font-bold px-1.5 py-0.5 rounded ${getDropTagStyle(boss.dropColor)}"><i class="fa-solid fa-gift mr-1"></i>${boss.dropTag}</span>`
+          : '';
+
         // ปุ่มบอสเกิด (แสดงเฉพาะเวลาที่ยังคูลดาวน์/ไม่เกิด)
         const spawnButtonHtml = !isAlive
           ? `<button onclick="setBossAlive('${boss.id}')" title="เปลี่ยนสถานะเป็น ALIVE ทันที" class="bg-green-600 hover:bg-green-500 active:scale-95 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition flex items-center justify-center gap-1 shadow-sm shadow-green-600/30">
@@ -1125,6 +1182,10 @@
                   <span class="bg-yellow-500/10 text-yellow-400 border border-yellow-500/30 text-[10px] font-extrabold px-1.5 py-0.5 rounded">
                     ${boss.chance || 100}%
                   </span>
+                  <span class="bg-gray-800 text-gray-300 border border-gray-700 text-[10px] font-semibold px-1.5 py-0.5 rounded">
+                    ระยะเวลาเกิด ${boss.respawnHours} ชม.
+                  </span>
+                  ${dropTagHtml}
                   ${statusBadge}
                 </div>
                 ${locationHtml}
@@ -1139,7 +1200,7 @@
           <!-- ฝั่งกลาง: ข้อมูลเวลาเกิด & ตัวนับถอยหลัง -->
           <div class="flex items-center gap-4 w-full md:w-auto justify-between md:justify-center">
             <div class="hidden md:block text-right text-xs text-gray-400">
-              <span class="block text-[10px] text-gray-500">คูลดาวน์ ${boss.respawnHours} ชม.</span>
+              <span class="block text-[10px] text-gray-500">ระยะเวลาเกิด ${boss.respawnHours} ชม.</span>
               <span>เกิดถัดไป: <strong class="text-yellow-400">${nextSpawnTimeStr} น.</strong></span>
             </div>
 
