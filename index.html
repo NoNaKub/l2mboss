@@ -318,7 +318,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // กำหนดรหัสผ่านสำหรับการสลับเข้าสู่โหมด Admin (สามารถแก้ไขรหัสตรงนี้ได้)
+    // กำหนดรหัสผ่านสำหรับการสลับเข้าสู่โหมด Admin
     const ADMIN_PASSCODE = "7777777";
     let isAdmin = false;
 
@@ -347,7 +347,7 @@
         if (passcode === ADMIN_PASSCODE) {
           isAdmin = true;
           updateRoleUI();
-          alert("เข้าสู่ระบบ Admin สำเร็จ! คุณสามารถแก้ไขข้อมูลได้แล้ว");
+          alert("เข้าสู่ระบบ Admin สำเร็จ! คุณสามารถจัดการข้อมูลได้ทั้งหมดแล้ว");
         } else if (passcode !== null) {
           alert("รหัสผ่านไม่ถูกต้อง!");
         }
