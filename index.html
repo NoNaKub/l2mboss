@@ -75,19 +75,14 @@
           <span id="sound-text">Mute Voice</span>
         </button>
 
-        <!-- ปุ่มรีเซ็ตเวลาบอสทั้งหมด (แสดงเฉพาะ Admin) -->
-        <button id="reset-all-btn" onclick="resetAllBossesTime()" title="รีเซ็ตเวลาบอสทั้งหมดในเซิร์ฟเวอร์นี้" class="admin-only hidden bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-800/50 px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5">
+        <!-- ปุ่มรีเซ็ตเวลาบอสทั้งหมด -->
+        <button onclick="resetAllBossesTime()" title="รีเซ็ตเวลาบอสทั้งหมดในเซิร์ฟเวอร์นี้" class="bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-800/50 px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5">
           <i class="fa-solid fa-rotate-left"></i> รีเซ็ตเวลาบอสทั้งหมด
         </button>
 
-        <!-- Management Button (แสดงเฉพาะ Admin) -->
-        <button id="manage-boss-btn" onclick="toggleManageModal(true)" class="admin-only hidden bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-3 py-1.5 rounded-lg text-xs transition flex items-center gap-1.5 shadow-md shadow-yellow-500/10">
+        <!-- Management Button -->
+        <button onclick="toggleManageModal(true)" class="bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-3 py-1.5 rounded-lg text-xs transition flex items-center gap-1.5 shadow-md shadow-yellow-500/10">
           <i class="fa-solid fa-gear"></i> จัดการบอส
-        </button>
-
-        <!-- Admin Login / Logout Button -->
-        <button id="auth-btn" onclick="toggleAdminAuth()" class="bg-gray-800 hover:bg-gray-700 text-yellow-400 border border-gray-700 font-bold px-3 py-1.5 rounded-lg text-xs transition flex items-center gap-1.5">
-          <i class="fa-solid fa-key"></i> <span id="auth-btn-text">เข้าสู่ระบบ Admin</span>
         </button>
       </div>
     </div>
@@ -96,13 +91,12 @@
   <!-- Main Container -->
   <main class="max-w-7xl mx-auto px-4 mt-6">
     
-    <!-- Active Server Bar & Status Notification -->
+    <!-- Active Server Bar & Web Notification Permission -->
     <div class="flex flex-col sm:flex-row items-center justify-between mb-4 bg-gray-900/40 p-3 rounded-xl border border-gray-800/80 gap-2">
       <div class="flex items-center gap-2">
         <span class="w-2.5 h-2.5 rounded-full bg-green-500 animate-ping"></span>
         <span class="text-xs text-gray-400">กำลังแสดงข้อมูลเซิร์ฟเวอร์:</span>
         <span id="current-server-display" class="text-sm font-black text-yellow-400 uppercase tracking-wider">A10</span>
-        <span id="role-badge" class="ml-2 text-[10px] bg-blue-950 text-blue-400 border border-blue-800 px-2 py-0.5 rounded-full font-semibold">โหมดดูอย่างเดียว (Viewer)</span>
       </div>
 
       <!-- ปุ่มขอเปิดสิทธิ์ Web Notifications -->
@@ -163,6 +157,7 @@
             <div class="flex-1">
               <label class="text-[11px] text-gray-400 block mb-1">เลือกเซิร์ฟเวอร์ต้นทาง</label>
               <select id="import-source-server" onchange="loadSourceServerBosses()" class="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                <!-- ตัวเลือกเซิร์ฟเวอร์จะถูก Render ผ่าน JavaScript -->
               </select>
             </div>
             <div class="flex items-end">
@@ -171,6 +166,7 @@
               </button>
             </div>
           </div>
+          <!-- รายการบอสให้เลือกนำเข้าทีละตัว -->
           <div id="import-boss-list-container" class="space-y-2 mt-3 max-h-40 overflow-y-auto custom-scrollbar border-t border-gray-800/60 pt-2">
             <p class="text-xs text-gray-500 text-center py-2">กำลังโหลดรายการบอสต้นทาง...</p>
           </div>
@@ -202,6 +198,7 @@
             </div>
           </div>
 
+          <!-- สถานที่เกิด และ แท็กไอเทมดรอป + สี -->
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
             <div>
               <label class="text-[11px] text-gray-400 block mb-1">สถานที่บอสเกิด</label>
@@ -222,6 +219,7 @@
             </div>
           </div>
 
+          <!-- ตัวเลือกอัปโหลดรูปภาพ -->
           <div class="mb-3">
             <label class="text-[11px] text-gray-400 block mb-1">รูปภาพบอส (เลือกไฟล์ หรือ วาง URL)</label>
             <div class="flex gap-2">
@@ -233,6 +231,7 @@
             </div>
           </div>
 
+          <!-- ตัวแสดง ตัวอย่างรูปภาพ (Preview) -->
           <div id="image-preview-container" class="hidden mb-3 flex items-center gap-3 bg-gray-900 p-2 rounded-lg border border-gray-800">
             <img id="image-preview" src="" class="w-10 h-10 object-cover rounded-lg border border-gray-700">
             <span class="text-xs text-gray-400 flex-1">รูปภาพตัวอย่าง</span>
@@ -247,7 +246,9 @@
           </div>
         </div>
 
+        <!-- Current Bosses Table -->
         <div>
+          <!-- เพิ่มส่วนหัวข้อและช่องค้นหาบอสภายในเมนูจัดการบอส -->
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
             <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider">รายการบอสทั้งหมดในเซิร์ฟเวอร์นี้</h3>
             <div class="relative w-full sm:w-48">
@@ -318,10 +319,6 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // กำหนดรหัสผ่านสำหรับการสลับเข้าสู่โหมด Admin
-    const ADMIN_PASSCODE = "7777777";
-    let isAdmin = false;
-
     const availableServers = ["A9", "A10", "Invasion"];
 
     let currentServer = "A10";
@@ -334,45 +331,7 @@
     const played5MinAlerts = new Set();
     const playedSpawnAlerts = new Set();
 
-    // ระบบจัดการสิทธิ์ผู้ใช้งาน (Viewer vs Admin)
-    function toggleAdminAuth() {
-      if (isAdmin) {
-        // Logout
-        isAdmin = false;
-        updateRoleUI();
-        alert("ออกจากระบบ Admin เรียบร้อยแล้ว (เปลี่ยนเป็นโหมดดูเท่านั้น)");
-      } else {
-        // Login Prompt
-        const passcode = prompt("กรุณากรอกรหัสผ่าน Admin เพื่อแก้ไขข้อมูล:");
-        if (passcode === ADMIN_PASSCODE) {
-          isAdmin = true;
-          updateRoleUI();
-          alert("เข้าสู่ระบบ Admin สำเร็จ! คุณสามารถจัดการข้อมูลได้ทั้งหมดแล้ว");
-        } else if (passcode !== null) {
-          alert("รหัสผ่านไม่ถูกต้อง!");
-        }
-      }
-    }
-
-    function updateRoleUI() {
-      const authBtnText = document.getElementById('auth-btn-text');
-      const roleBadge = document.getElementById('role-badge');
-      const adminElements = document.querySelectorAll('.admin-only');
-
-      if (isAdmin) {
-        authBtnText.innerText = "ออกจากระบบ Admin";
-        roleBadge.className = "ml-2 text-[10px] bg-amber-950 text-amber-400 border border-amber-800 px-2 py-0.5 rounded-full font-semibold";
-        roleBadge.innerText = "โหมดผู้ดูแลระบบ (Admin)";
-        adminElements.forEach(el => el.classList.remove('hidden'));
-      } else {
-        authBtnText.innerText = "เข้าสู่ระบบ Admin";
-        roleBadge.className = "ml-2 text-[10px] bg-blue-950 text-blue-400 border border-blue-800 px-2 py-0.5 rounded-full font-semibold";
-        roleBadge.innerText = "โหมดดูอย่างเดียว (Viewer)";
-        adminElements.forEach(el => el.classList.add('hidden'));
-      }
-      renderBosses();
-    }
-
+    // ฟังก์ชันช่วยกำหนดสไตล์ของแท็กดรอปไอเทมตามสีที่เลือก
     function getDropTagStyle(color) {
       switch (color) {
         case 'red':
@@ -387,6 +346,7 @@
       }
     }
 
+    // 1. ระบบ Browser Notification
     function requestNotificationPermission() {
       if (!("Notification" in window)) {
         alert("เบราว์เซอร์ของคุณไม่รองรับการแจ้งเตือนแบบ Web Notification");
@@ -421,6 +381,7 @@
       }
     }
 
+    // 2. ระบบพูดแจ้งเตือนภาษาอังกฤษ
     function speakTextEnglish(text) {
       if (!isSoundEnabled || !('speechSynthesis' in window)) return;
       window.speechSynthesis.cancel();
@@ -450,6 +411,7 @@
       }
     }
 
+    // 3. เปลี่ยนเซิร์ฟเวอร์แบบปุ่มกด
     function changeServer(serverName) {
       currentServer = serverName;
       document.getElementById('current-server-display').innerText = currentServer;
@@ -472,6 +434,7 @@
       bindFirebaseListeners();
     }
 
+    // ผูก Realtime Database
     function bindFirebaseListeners() {
       if (bossesRef) bossesRef.off();
 
@@ -488,6 +451,7 @@
     bindFirebaseListeners();
     updateNotificationBtnUI();
 
+    // ระบบเลือกไฟล์รูป และ พรีวิวรูป
     function handleFileUpload(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -528,11 +492,8 @@
       document.getElementById('image-preview-container').classList.add('hidden');
     }
 
+    // CRUD Boss Functions
     function toggleManageModal(show) {
-      if (show && !isAdmin) {
-        alert("สิทธิ์ไม่พอ! เฉพาะ Admin เท่านั้นที่สามารถเข้าถึงการจัดการบอสได้");
-        return;
-      }
       document.getElementById('manage-modal').classList.toggle('hidden', !show);
       if (show) {
         const manageSearch = document.getElementById('manage-search-input');
@@ -542,6 +503,7 @@
       }
     }
 
+    // --- ฟังก์ชันสำหรับระบบนำเข้าข้อมูลบอสจากเซิร์ฟเวอร์อื่น ---
     function initImportServerDropdown() {
       const select = document.getElementById('import-source-server');
       select.innerHTML = '';
@@ -606,7 +568,6 @@
     }
 
     function importSingleBoss(bossId) {
-      if (!isAdmin) return alert("เฉพาะ Admin เท่านั้นที่ทำงานนี้ได้");
       const boss = sourceBossesCache[bossId];
       if (!boss) return;
 
@@ -629,7 +590,6 @@
     }
 
     function importAllBossesFromSource() {
-      if (!isAdmin) return alert("เฉพาะ Admin เท่านั้นที่ทำงานนี้ได้");
       const keys = Object.keys(sourceBossesCache);
       if (keys.length === 0) {
         alert("ไม่มีข้อมูลบอสให้ทำการนำเข้า");
@@ -664,7 +624,6 @@
     }
 
     function saveBoss() {
-      if (!isAdmin) return alert("เฉพาะ Admin เท่านั้นที่สามารถบันทึกข้อมูลได้");
       const editId = document.getElementById('edit-boss-id').value;
       const name = document.getElementById('boss-name').value.trim();
       const nameTh = document.getElementById('boss-name-th').value.trim();
@@ -692,7 +651,6 @@
     }
 
     function editBoss(id) {
-      if (!isAdmin) return alert("เฉพาะ Admin เท่านั้น");
       const boss = localBosses[id];
       if (!boss) return;
       document.getElementById('edit-boss-id').value = id;
@@ -716,7 +674,6 @@
     }
 
     function deleteBoss(id, name) {
-      if (!isAdmin) return alert("เฉพาะ Admin เท่านั้น");
       if (confirm(`ลบบอส "${name}" ใช่หรือไม่?`)) {
         db.ref(`servers/${currentServer}/bosses/${id}`).remove();
       }
@@ -750,6 +707,7 @@
         return;
       }
 
+      // กรองรายการบอสในเมนูจัดการตามชื่อบอส (อังกฤษ/ไทย) หรือสถานที่ หรือแท็กดรอป
       if (searchKeyword) {
         bossKeys = bossKeys.filter(id => {
           const boss = localBosses[id];
@@ -803,8 +761,8 @@
       });
     }
 
+    // ฟังก์ชันจัดการเวลาบอส
     function setKillNow(id) {
-      if (!isAdmin) return alert("เฉพาะ Admin เท่านั้นที่ปรับแก้ไขเวลาได้");
       const now = Date.now();
       played5MinAlerts.delete(id);
       playedSpawnAlerts.delete(id);
@@ -813,7 +771,6 @@
     }
 
     function setBossMiss(id) {
-      if (!isAdmin) return alert("เฉพาะ Admin เท่านั้นที่ปรับแก้ไขเวลาได้");
       const boss = localBosses[id];
       if (!boss) return;
       
@@ -827,8 +784,8 @@
       db.ref(`servers/${currentServer}/bosses/${id}`).update({ lastKilled: newLastKilled });
     }
 
+    // ปุ่มบอสเกิด: เปลี่ยนสถานะบอสเป็น ALIVE โดยย้อนเวลา lastKilled ให้เกิด ณ ปัจจุบัน พอดี
     function setBossAlive(id) {
-      if (!isAdmin) return alert("เฉพาะ Admin เท่านั้นที่ปรับแก้ไขเวลาได้");
       const boss = localBosses[id];
       if (!boss) return;
 
@@ -841,8 +798,8 @@
       db.ref(`servers/${currentServer}/bosses/${id}`).update({ lastKilled: aliveLastKilled });
     }
 
+    // MODAL จัดการแก้ไขเวลาตาย
     function toggleTimeModal(show) {
-      if (show && !isAdmin) return alert("เฉพาะ Admin เท่านั้นที่สามารถแก้ไขเวลาได้");
       document.getElementById('time-modal').classList.toggle('hidden', !show);
     }
 
@@ -857,7 +814,6 @@
     }
 
     function openCustomTimeModal(id) {
-      if (!isAdmin) return alert("เฉพาะ Admin เท่านั้นที่สามารถปรับแก้ไขเวลาได้");
       const boss = localBosses[id];
       if (!boss) return;
 
@@ -878,7 +834,6 @@
     }
 
     function submitCustomKillTime() {
-      if (!isAdmin) return alert("เฉพาะ Admin เท่านั้น");
       const id = document.getElementById('time-boss-id').value;
       const val = document.getElementById('custom-datetime-input').value;
       if (!val) return alert("กรุณาเลือกวันเวลาที่ต้องการ");
@@ -895,8 +850,8 @@
       toggleTimeModal(false);
     }
 
+    // รีเซ็ตเวลาบอสทั้งหมดในเซิร์ฟเวอร์
     function resetAllBossesTime() {
-      if (!isAdmin) return alert("เฉพาะ Admin เท่านั้นที่สามารถรีเซ็ตเวลาบอสได้");
       if (confirm(`คุณต้องการ "รีเซ็ตเวลาบอสทั้งหมด" ในเซิร์ฟเวอร์ ${currentServer} ใช่หรือไม่?`)) {
         const updates = {};
         Object.keys(localBosses).forEach(id => {
@@ -908,6 +863,7 @@
 
     function filterBosses() { renderBosses(); }
 
+    // แปลงเวลาให้แสดงรูปแบบวันเดือนไทย
     function formatLastKilledThai(timestamp) {
       if (!timestamp) return 'ยังไม่มีข้อมูล';
       const thaiMonths = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
@@ -920,6 +876,7 @@
       return `${day} ${month} ${year} ${hours}:${minutes}`;
     }
 
+    // Render รายการบอส
     function renderBosses() {
       const container = document.getElementById('boss-list');
       const searchKeyword = document.getElementById('search-input').value.toLowerCase();
@@ -945,6 +902,7 @@
           <div class="text-center py-16 text-gray-500 bg-gray-900/30 rounded-xl border border-gray-800">
             <i class="fa-solid fa-ghost text-4xl mb-3 text-gray-600"></i>
             <p class="text-sm font-semibold text-gray-400">ยังไม่มีข้อมูลบอสในเซิร์ฟเวอร์นี้</p>
+            <p class="text-xs text-gray-600 mt-1">กดปุ่ม <strong class="text-yellow-500">"จัดการบอส"</strong> ด้านบนเพื่อเพิ่มข้อมูลบอสใหม่</p>
           </div>
         `;
         document.getElementById('stat-total').innerText = 0;
@@ -1038,52 +996,37 @@
           }
         }
 
+        // แสดงผลรูปภาพบอส
         const bossImgHtml = boss.image 
           ? `<img src="${boss.image}" class="w-10 h-10 rounded-xl object-cover border border-gray-700/80 shadow-inner flex-shrink-0">`
           : `<div class="w-10 h-10 rounded-xl bg-gray-950 border border-gray-800 flex items-center justify-center text-yellow-500 text-lg flex-shrink-0"><i class="fa-solid fa-dragon"></i></div>`;
 
+        // แสดงสถานที่เกิด
         const locationHtml = boss.location 
           ? `<span class="text-[11px] text-gray-400 block mt-0.5 truncate"><i class="fa-solid fa-location-dot text-red-400 text-[10px] mr-1"></i>${boss.location}</span>`
           : '';
 
+        // แสดงแท็กไอเทมดรอป
         const dropTagHtml = boss.dropTag 
           ? `<span class="border text-[10px] font-bold px-1.5 py-0.5 rounded ${getDropTagStyle(boss.dropColor)}"><i class="fa-solid fa-gift mr-1"></i>${boss.dropTag}</span>`
           : '';
 
-        // แสดงปุ่มกระทำเฉพาะกรณีเป็น Admin เท่านั้น
-        let actionButtonsHtml = '';
-        if (isAdmin) {
-          const spawnButtonHtml = !isAlive
-            ? `<button onclick="setBossAlive('${boss.id}')" title="เปลี่ยนสถานะเป็น ALIVE ทันที" class="bg-green-600 hover:bg-green-500 active:scale-95 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition flex items-center justify-center gap-1 shadow-sm shadow-green-600/30">
-                 <i class="fa-solid fa-bolt"></i> บอสเกิด
-               </button>`
-            : '';
+        // ปุ่มบอสเกิด (แสดงเฉพาะเวลาที่ยังคูลดาวน์/ไม่เกิด)
+        const spawnButtonHtml = !isAlive
+          ? `<button onclick="setBossAlive('${boss.id}')" title="เปลี่ยนสถานะเป็น ALIVE ทันที" class="bg-green-600 hover:bg-green-500 active:scale-95 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition flex items-center justify-center gap-1 shadow-sm shadow-green-600/30">
+               <i class="fa-solid fa-bolt"></i> บอสเกิด
+             </button>`
+          : '';
 
-          const aliveActionButtons = isAlive 
-            ? `<button onclick="setKillNow('${boss.id}')" title="กดเมื่อบอสตาย" class="flex-1 md:flex-initial bg-red-600 hover:bg-red-500 active:scale-95 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition flex items-center justify-center gap-1 shadow-sm shadow-red-600/30">
-                 <i class="fa-solid fa-skull"></i> ตาย
-               </button>
-               <button onclick="setBossMiss('${boss.id}')" title="บอสไม่เกิด (นับรอบต่อไป)" class="flex-1 md:flex-initial bg-amber-600 hover:bg-amber-500 active:scale-95 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition flex items-center justify-center gap-1 shadow-sm shadow-amber-600/30">
-                 <i class="fa-solid fa-ban"></i> บอสบิด
-               </button>`
-            : '';
-
-          actionButtonsHtml = `
-            <div class="flex items-center gap-1.5 w-full md:w-auto justify-end">
-              ${spawnButtonHtml}
-              ${aliveActionButtons}
-              <button onclick="openCustomTimeModal('${boss.id}')" title="ระบุเวลาตายเอง" class="bg-gray-800 hover:bg-gray-700 active:scale-95 text-gray-200 px-3 py-1.5 rounded-lg text-xs transition border border-gray-700 flex items-center justify-center gap-1">
-                <i class="fa-solid fa-clock"></i> แก้ไข
-              </button>
-            </div>
-          `;
-        } else {
-          actionButtonsHtml = `
-            <div class="text-xs text-gray-500 italic">
-              <i class="fa-solid fa-lock"></i> เฉพาะ Admin
-            </div>
-          `;
-        }
+        // แสดงปุ่ม "ตาย" และ "บอสบิด" เฉพาะตอนที่บอสเกิด (ALIVE) เท่านั้น
+        const aliveActionButtons = isAlive 
+          ? `<button onclick="setKillNow('${boss.id}')" title="กดเมื่อบอสตาย" class="flex-1 md:flex-initial bg-red-600 hover:bg-red-500 active:scale-95 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition flex items-center justify-center gap-1 shadow-sm shadow-red-600/30">
+               <i class="fa-solid fa-skull"></i> ตาย
+             </button>
+             <button onclick="setBossMiss('${boss.id}')" title="บอสไม่เกิด (นับรอบต่อไป)" class="flex-1 md:flex-initial bg-amber-600 hover:bg-amber-500 active:scale-95 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition flex items-center justify-center gap-1 shadow-sm shadow-amber-600/30">
+               <i class="fa-solid fa-ban"></i> บอสบิด
+             </button>`
+          : '';
 
         const row = document.createElement('div');
         row.className = `border rounded-xl p-3 sm:p-4 flex flex-col md:flex-row items-center justify-between gap-3 transition-all duration-200 ${rowBg}`;
@@ -1128,7 +1071,13 @@
           </div>
 
           <!-- ฝั่งขวา: ปุ่มจัดการเวลา -->
-          ${actionButtonsHtml}
+          <div class="flex items-center gap-1.5 w-full md:w-auto justify-end">
+            ${spawnButtonHtml}
+            ${aliveActionButtons}
+            <button onclick="openCustomTimeModal('${boss.id}')" title="ระบุเวลาตายเอง" class="bg-gray-800 hover:bg-gray-700 active:scale-95 text-gray-200 px-3 py-1.5 rounded-lg text-xs transition border border-gray-700 flex items-center justify-center gap-1">
+              <i class="fa-solid fa-clock"></i> แก้ไข
+            </button>
+          </div>
         `;
         container.appendChild(row);
       });
