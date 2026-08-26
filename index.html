@@ -134,7 +134,7 @@
     </div>
   </main>
 
-  <!-- MODAL 1: เมนูจัดการข้อมูลบอส (CRUD + Import) -->
+  <!-- MODAL 1: เมนูจัดการข้อมูลบอส (CRUD + Import + Delete All) -->
   <div id="manage-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
       
@@ -248,9 +248,15 @@
 
         <!-- Current Bosses Table -->
         <div>
-          <!-- เพิ่มส่วนหัวข้อและช่องค้นหาบอสภายในเมนูจัดการบอส -->
+          <!-- เพิ่มส่วนหัวข้อ ช่องค้นหา และปุ่มลบบอสทั้งหมด -->
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-            <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider">รายการบอสทั้งหมดในเซิร์ฟเวอร์นี้</h3>
+            <div class="flex items-center gap-2">
+              <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider">รายการบอสทั้งหมดในเซิร์ฟเวอร์นี้</h3>
+              <!-- ปุ่มลบบอสทั้งหมดในเซิร์ฟเวอร์ -->
+              <button onclick="deleteAllServerBosses()" title="ลบข้อมูลบอสทั้งหมดออกจากเซิร์ฟเวอร์นี้" class="bg-red-950/60 hover:bg-red-900 text-red-400 border border-red-800/80 px-2.5 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1 shadow-sm">
+                <i class="fa-solid fa-trash-can"></i> ลบบอสทั้งหมด
+              </button>
+            </div>
             <div class="relative w-full sm:w-48">
               <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-gray-500 text-xs"></i>
               <input type="text" id="manage-search-input" oninput="renderManageList()" placeholder="ค้นหาชื่อบอส/สถานที่..." 
@@ -676,6 +682,25 @@
     function deleteBoss(id, name) {
       if (confirm(`ลบบอส "${name}" ใช่หรือไม่?`)) {
         db.ref(`servers/${currentServer}/bosses/${id}`).remove();
+      }
+    }
+
+    // ฟังก์ชันสำหรับลบบอสทั้งหมดในเซิร์ฟเวอร์ปัจจุบัน
+    function deleteAllServerBosses() {
+      const bossKeys = Object.keys(localBosses);
+      if (bossKeys.length === 0) {
+        alert(`ไม่มีข้อมูลบอสในเซิร์ฟเวอร์ ${currentServer} ให้ทำการลบ`);
+        return;
+      }
+
+      if (confirm(`⚠️ ยืนยันการลบบอสทั้งหมด (${bossKeys.length} ตัว) ในเซิร์ฟเวอร์ ${currentServer} ใช่หรือไม่?\n\nการกระทำนี้จะไม่สามารถย้อนคืนได้!`)) {
+        db.ref(`servers/${currentServer}/bosses`).remove()
+          .then(() => {
+            alert(`ลบข้อมูลบอสทั้งหมดในเซิร์ฟเวอร์ ${currentServer} สำเร็จแล้ว`);
+          })
+          .catch((err) => {
+            alert("เกิดข้อผิดพลาดในการลบข้อมูล: " + err.message);
+          });
       }
     }
 
