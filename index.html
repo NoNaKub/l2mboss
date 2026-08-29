@@ -269,12 +269,12 @@
     </div>
   </div>
 
-  <!-- MODAL 3: ยืนยัน/ปรับแต่งแก้ไขเวลาตายของบอส -->
+  <!-- MODAL 3: ยืนยันเวลาตายของบอส -->
   <div id="time-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-md p-6 shadow-2xl">
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-sm p-6 shadow-2xl text-center">
       <div class="flex justify-between items-center mb-4 border-b border-gray-800 pb-3">
         <h2 class="text-sm font-bold text-yellow-400 flex items-center gap-2">
-          <i class="fa-solid fa-clock"></i> ยืนยันเวลาตาย - <span id="modal-boss-name" class="text-white"></span>
+          <i class="fa-solid fa-clock"></i> ยืนยันเวลาตาย
         </h2>
         <button onclick="toggleTimeModal(false)" class="text-gray-400 hover:text-white">
           <i class="fa-solid fa-xmark"></i>
@@ -283,29 +283,15 @@
 
       <input type="hidden" id="time-boss-id" value="">
 
-      <div class="space-y-4 mb-6">
-        <div>
-          <label class="text-xs text-gray-400 block mb-1.5 font-medium">เวลาที่บอสตาย (สามารถแก้ไขได้)</label>
-          <div class="relative">
-            <input type="datetime-local" id="custom-datetime-input" class="w-full bg-gray-950 border border-yellow-500/80 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-yellow-500 tracking-wide">
-          </div>
-        </div>
-
-        <div>
-          <span class="text-xs text-gray-400 block mb-2 font-medium">ปุ่มลัดปรับเวลา:</span>
-          <div class="flex flex-wrap gap-1.5">
-            <button onclick="adjustCustomTime(0)" class="bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 px-3 py-1.5 rounded-lg text-xs transition">ตอนนี้</button>
-            <button onclick="adjustCustomTime(-5)" class="bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 px-3 py-1.5 rounded-lg text-xs transition">-5 นาที</button>
-            <button onclick="adjustCustomTime(-10)" class="bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 px-3 py-1.5 rounded-lg text-xs transition">-10 นาที</button>
-            <button onclick="adjustCustomTime(-15)" class="bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 px-3 py-1.5 rounded-lg text-xs transition">-15 นาที</button>
-            <button onclick="adjustCustomTime(-30)" class="bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 px-3 py-1.5 rounded-lg text-xs transition">-30 นาที</button>
-          </div>
-        </div>
+      <!-- แสดงเวลาตาย บรรทัดที่ 1 (เวลาตัวใหญ่) และ บรรทัดที่ 2 (วันเดือนปี) -->
+      <div class="bg-gray-950 rounded-xl p-6 border border-yellow-500/30 mb-6 shadow-inner flex flex-col items-center justify-center">
+        <div id="display-kill-time" class="text-4xl font-black text-yellow-400 tracking-wider font-mono">00:00</div>
+        <div id="display-kill-date" class="text-xs text-gray-400 font-semibold mt-1">1 ม.ค. 2567</div>
       </div>
 
       <div class="flex justify-end gap-2">
-        <button onclick="toggleTimeModal(false)" class="bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs px-4 py-2 rounded-lg transition">ยกเลิก</button>
-        <button onclick="submitCustomKillTime()" class="bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-xs px-5 py-2 rounded-lg transition">ยืนยันเวลาบันทึก</button>
+        <button onclick="toggleTimeModal(false)" class="w-full bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs px-4 py-2.5 rounded-xl font-bold transition">ยกเลิก</button>
+        <button onclick="submitCustomKillTime()" class="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-xs px-5 py-2.5 rounded-xl transition shadow-lg shadow-yellow-500/10">ยืนยัน</button>
       </div>
     </div>
   </div>
@@ -331,6 +317,7 @@
     let localBosses = {};
     let sourceBossesCache = {};
     let isSoundEnabled = false;
+    let selectedKillTimestamp = 0;
     
     let bossesRef = null;
 
@@ -685,7 +672,6 @@
       }
     }
 
-    // ฟังก์ชันสำหรับลบบอสทั้งหมดในเซิร์ฟเวอร์ปัจจุบัน
     function deleteAllServerBosses() {
       const bossKeys = Object.keys(localBosses);
       if (bossKeys.length === 0) {
@@ -732,7 +718,6 @@
         return;
       }
 
-      // กรองรายการบอสในเมนูจัดการตามชื่อบอส (อังกฤษ/ไทย) หรือสถานที่ หรือแท็กดรอป
       if (searchKeyword) {
         bossKeys = bossKeys.filter(id => {
           const boss = localBosses[id];
@@ -787,7 +772,6 @@
     }
 
     // ฟังก์ชันจัดการเวลาบอส
-    // ปรับการทำงานของปุ่ม "ตาย": เปิด Modal ให้ยืนยันและแก้ไขเวลาได้ตามต้องการก่อนบันทึก
     function setKillNow(id) {
       openCustomTimeModal(id);
     }
@@ -806,7 +790,6 @@
       db.ref(`servers/${currentServer}/bosses/${id}`).update({ lastKilled: newLastKilled });
     }
 
-    // ปุ่มบอสเกิด: เปลี่ยนสถานะบอสเป็น ALIVE โดยย้อนเวลา lastKilled ให้เกิด ณ ปัจจุบัน พอดี
     function setBossAlive(id) {
       const boss = localBosses[id];
       if (!boss) return;
@@ -825,50 +808,39 @@
       document.getElementById('time-modal').classList.toggle('hidden', !show);
     }
 
-    function formatDateTimeLocal(dateObj) {
-      const pad = (n) => n.toString().padStart(2, '0');
-      const year = dateObj.getFullYear();
-      const month = pad(dateObj.getMonth() + 1);
-      const day = pad(dateObj.getDate());
-      const hours = pad(dateObj.getHours());
-      const minutes = pad(dateObj.getMinutes());
-      return `${year}-${month}-${day}T${hours}:${minutes}`;
-    }
-
     function openCustomTimeModal(id) {
       const boss = localBosses[id];
       if (!boss) return;
 
       document.getElementById('time-boss-id').value = id;
-      const displayName = boss.nameTh ? `${boss.name} (${boss.nameTh})` : boss.name;
-      document.getElementById('modal-boss-name').innerText = displayName;
+      
+      const now = new Date();
+      selectedKillTimestamp = now.getTime();
 
-      // ตั้งค่าเริ่มต้นของป๊อปอัปให้เป็นเวลาปัจจุบัน (ตอนนี้)
-      document.getElementById('custom-datetime-input').value = formatDateTimeLocal(new Date());
+      // แปลงเวลาปัจจุบันแสดงผล 2 บรรทัด
+      const thaiMonths = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+      const pad = (n) => n.toString().padStart(2, '0');
+      
+      const hours = pad(now.getHours());
+      const minutes = pad(now.getMinutes());
+      const day = now.getDate();
+      const month = thaiMonths[now.getMonth()];
+      const year = now.getFullYear() + 543;
+
+      document.getElementById('display-kill-time').innerText = `${hours}:${minutes} น.`;
+      document.getElementById('display-kill-date').innerText = `${day} ${month} ${year}`;
 
       toggleTimeModal(true);
     }
 
-    function adjustCustomTime(minutesOffset) {
-      const now = new Date();
-      now.setMinutes(now.getMinutes() + minutesOffset);
-      document.getElementById('custom-datetime-input').value = formatDateTimeLocal(now);
-    }
-
     function submitCustomKillTime() {
       const id = document.getElementById('time-boss-id').value;
-      const val = document.getElementById('custom-datetime-input').value;
-      if (!val) return alert("กรุณาเลือกวันเวลาที่ต้องการ");
-
-      const targetDate = new Date(val);
-      const targetTimestamp = targetDate.getTime();
-
-      if (isNaN(targetTimestamp)) return alert("รูปแบบวันเวลาไม่ถูกต้อง");
+      if (!id || !selectedKillTimestamp) return;
 
       played5MinAlerts.delete(id);
       playedSpawnAlerts.delete(id);
 
-      db.ref(`servers/${currentServer}/bosses/${id}`).update({ lastKilled: targetTimestamp });
+      db.ref(`servers/${currentServer}/bosses/${id}`).update({ lastKilled: selectedKillTimestamp });
       toggleTimeModal(false);
     }
 
@@ -1018,31 +990,26 @@
           }
         }
 
-        // แสดงผลรูปภาพบอส
         const bossImgHtml = boss.image 
           ? `<img src="${boss.image}" class="w-10 h-10 rounded-xl object-cover border border-gray-700/80 shadow-inner flex-shrink-0">`
           : `<div class="w-10 h-10 rounded-xl bg-gray-950 border border-gray-800 flex items-center justify-center text-yellow-500 text-lg flex-shrink-0"><i class="fa-solid fa-dragon"></i></div>`;
 
-        // แสดงสถานที่เกิด
         const locationHtml = boss.location 
           ? `<span class="text-[11px] text-gray-400 block mt-0.5 truncate"><i class="fa-solid fa-location-dot text-red-400 text-[10px] mr-1"></i>${boss.location}</span>`
           : '';
 
-        // แสดงแท็กไอเทมดรอป
         const dropTagHtml = boss.dropTag 
           ? `<span class="border text-[10px] font-bold px-1.5 py-0.5 rounded ${getDropTagStyle(boss.dropColor)}"><i class="fa-solid fa-gift mr-1"></i>${boss.dropTag}</span>`
           : '';
 
-        // ปุ่มบอสเกิด (แสดงเฉพาะเวลาที่ยังคูลดาวน์/ไม่เกิด)
         const spawnButtonHtml = !isAlive
           ? `<button onclick="setBossAlive('${boss.id}')" title="เปลี่ยนสถานะเป็น ALIVE ทันที" class="bg-green-600 hover:bg-green-500 active:scale-95 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition flex items-center justify-center gap-1 shadow-sm shadow-green-600/30">
                <i class="fa-solid fa-bolt"></i> บอสเกิด
              </button>`
           : '';
 
-        // แสดงปุ่ม "ตาย" และ "บอสบิด" เฉพาะตอนที่บอสเกิด (ALIVE) เท่านั้น
         const aliveActionButtons = isAlive 
-          ? `<button onclick="setKillNow('${boss.id}')" title="กดเมื่อบอสตาย เพื่อยืนยัน/ปรับเวลา" class="flex-1 md:flex-initial bg-red-600 hover:bg-red-500 active:scale-95 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition flex items-center justify-center gap-1 shadow-sm shadow-red-600/30">
+          ? `<button onclick="setKillNow('${boss.id}')" title="กดเมื่อบอสตาย เพื่อยืนยันเวลา" class="flex-1 md:flex-initial bg-red-600 hover:bg-red-500 active:scale-95 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition flex items-center justify-center gap-1 shadow-sm shadow-red-600/30">
                <i class="fa-solid fa-skull"></i> ตาย
              </button>
              <button onclick="setBossMiss('${boss.id}')" title="บอสไม่เกิด (นับรอบต่อไป)" class="flex-1 md:flex-initial bg-amber-600 hover:bg-amber-500 active:scale-95 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition flex items-center justify-center gap-1 shadow-sm shadow-amber-600/30">
@@ -1096,7 +1063,7 @@
           <div class="flex items-center gap-1.5 w-full md:w-auto justify-end">
             ${spawnButtonHtml}
             ${aliveActionButtons}
-            <button onclick="openCustomTimeModal('${boss.id}')" title="ระบุเวลาตายเอง" class="bg-gray-800 hover:bg-gray-700 active:scale-95 text-gray-200 px-3 py-1.5 rounded-lg text-xs transition border border-gray-700 flex items-center justify-center gap-1">
+            <button onclick="openCustomTimeModal('${boss.id}')" title="ยืนยันเวลาตาย" class="bg-gray-800 hover:bg-gray-700 active:scale-95 text-gray-200 px-3 py-1.5 rounded-lg text-xs transition border border-gray-700 flex items-center justify-center gap-1">
               <i class="fa-solid fa-clock"></i> แก้ไข
             </button>
           </div>
