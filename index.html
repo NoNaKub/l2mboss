@@ -157,6 +157,7 @@
             <div class="flex-1">
               <label class="text-[11px] text-gray-400 block mb-1">เลือกเซิร์ฟเวอร์ต้นทาง</label>
               <select id="import-source-server" onchange="loadSourceServerBosses()" class="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                <!-- ตัวเลือกเซิร์ฟเวอร์จะถูก Render ผ่าน JavaScript -->
               </select>
             </div>
             <div class="flex items-end">
@@ -165,6 +166,7 @@
               </button>
             </div>
           </div>
+          <!-- รายการบอสให้เลือกนำเข้าทีละตัว -->
           <div id="import-boss-list-container" class="space-y-2 mt-3 max-h-40 overflow-y-auto custom-scrollbar border-t border-gray-800/60 pt-2">
             <p class="text-xs text-gray-500 text-center py-2">กำลังโหลดรายการบอสต้นทาง...</p>
           </div>
@@ -196,6 +198,7 @@
             </div>
           </div>
 
+          <!-- สถานที่เกิด และ แท็กไอเทมดรอป + สี -->
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
             <div>
               <label class="text-[11px] text-gray-400 block mb-1">สถานที่บอสเกิด</label>
@@ -216,6 +219,7 @@
             </div>
           </div>
 
+          <!-- ตัวเลือกอัปโหลดรูปภาพ -->
           <div class="mb-3">
             <label class="text-[11px] text-gray-400 block mb-1">รูปภาพบอส (เลือกไฟล์ หรือ วาง URL)</label>
             <div class="flex gap-2">
@@ -227,6 +231,7 @@
             </div>
           </div>
 
+          <!-- ตัวแสดง ตัวอย่างรูปภาพ (Preview) -->
           <div id="image-preview-container" class="hidden mb-3 flex items-center gap-3 bg-gray-900 p-2 rounded-lg border border-gray-800">
             <img id="image-preview" src="" class="w-10 h-10 object-cover rounded-lg border border-gray-700">
             <span class="text-xs text-gray-400 flex-1">รูปภาพตัวอย่าง</span>
@@ -243,9 +248,11 @@
 
         <!-- Current Bosses Table -->
         <div>
+          <!-- เพิ่มส่วนหัวข้อ ช่องค้นหา และปุ่มลบบอสทั้งหมด -->
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
             <div class="flex items-center gap-2">
               <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider">รายการบอสทั้งหมดในเซิร์ฟเวอร์นี้</h3>
+              <!-- ปุ่มลบบอสทั้งหมดในเซิร์ฟเวอร์ -->
               <button onclick="deleteAllServerBosses()" title="ลบข้อมูลบอสทั้งหมดออกจากเซิร์ฟเวอร์นี้" class="bg-red-950/60 hover:bg-red-900 text-red-400 border border-red-800/80 px-2.5 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1 shadow-sm">
                 <i class="fa-solid fa-trash-can"></i> ลบบอสทั้งหมด
               </button>
@@ -262,41 +269,36 @@
     </div>
   </div>
 
-  <!-- MODAL 3: ยืนยัน/แก้ไข วันเดือนปี(ค.ศ.) และเวลาตายของบอส -->
+  <!-- MODAL 3: ยืนยัน/ปรับแต่งแก้ไขเวลาตายของบอส (ปรับแก้ตามความต้องการ) -->
   <div id="time-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-sm p-6 shadow-2xl text-center">
-      <div class="flex justify-between items-center mb-4 border-b border-gray-800 pb-3">
-        <h2 class="text-sm font-bold text-yellow-400 flex items-center gap-2">
-          <i class="fa-solid fa-clock"></i> แก้ไขวันเวลาตายของบอส
-        </h2>
-        <button onclick="toggleTimeModal(false)" class="text-gray-400 hover:text-white">
-          <i class="fa-solid fa-xmark"></i>
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-sm p-6 shadow-2xl">
+      <div class="flex justify-between items-center mb-6 border-b border-gray-800 pb-3">
+        <h2 id="modal-boss-name" class="text-base font-bold text-yellow-400 truncate"></h2>
+        <button onclick="toggleTimeModal(false)" class="text-gray-400 hover:text-white transition">
+          <i class="fa-solid fa-xmark text-lg"></i>
         </button>
       </div>
 
       <input type="hidden" id="time-boss-id" value="">
 
-      <!-- แสดงเวลาตายตัวใหญ่ และแสดง พ.ศ. สรุป -->
-      <div class="bg-gray-950 rounded-xl p-4 border border-yellow-500/30 mb-4 shadow-inner flex flex-col items-center justify-center">
-        <div id="display-kill-time" class="text-3xl font-black text-yellow-400 tracking-wider font-mono">00:00</div>
-        <div id="display-kill-date" class="text-xs text-gray-400 font-semibold mt-1">1 ม.ค. 2567</div>
-      </div>
-
-      <!-- ช่องเลือก วัน/เดือน/ปี(ค.ศ.) เวลาแบบปรับเปลี่ยนได้ -->
-      <div class="mb-5 text-left">
-        <div class="flex justify-between items-center mb-1">
-          <label class="text-[11px] font-bold text-gray-400 block">ระบุ วัน/เดือน/ปี(ค.ศ.) และ เวลาตาย:</label>
-          <button type="button" onclick="setCurrentTimeToInput()" class="text-[10px] text-yellow-400 hover:underline">
-            <i class="fa-solid fa-arrows-rotate mr-0.5"></i> ใช้เวลาปัจจุบัน
-          </button>
+      <!-- ส่วนแก้ไขเวลา: บรรทัดแรก เวลาตัวใหญ่ (24 ชม.), บรรทัดสอง วันเดือนปี (ค.ศ. / CE) -->
+      <div class="space-y-4 mb-6">
+        <!-- บรรทัดแรก: เวลา 24 ชั่วโมง ตัวหนังสือขนาดใหญ่ -->
+        <div>
+          <input type="time" id="custom-time-input" step="60" 
+                 class="w-full bg-gray-950 border border-yellow-500/80 rounded-xl px-4 py-3 text-3xl font-black text-center text-yellow-400 font-mono focus:outline-none focus:ring-2 focus:ring-yellow-500 transition shadow-inner">
         </div>
-        <input type="datetime-local" id="kill-datetime-picker" onchange="updateDisplayTimeFromPicker()"
-               class="w-full bg-gray-950 border border-gray-700 rounded-xl px-3 py-2 text-xs text-yellow-400 font-mono font-bold focus:outline-none focus:border-yellow-500 [color-scheme:dark]">
+
+        <!-- บรรทัดที่สอง: วัน เดือน ปี ค.ศ. (CE) -->
+        <div>
+          <input type="date" id="custom-date-input" 
+                 class="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-2.5 text-sm font-semibold text-center text-gray-200 font-mono focus:outline-none focus:border-yellow-500 transition">
+        </div>
       </div>
 
       <div class="flex justify-end gap-2">
-        <button onclick="toggleTimeModal(false)" class="w-full bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs px-4 py-2.5 rounded-xl font-bold transition">ยกเลิก</button>
-        <button onclick="submitCustomKillTime()" class="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-xs px-5 py-2.5 rounded-xl transition shadow-lg shadow-yellow-500/10">บันทึกเวลา</button>
+        <button onclick="toggleTimeModal(false)" class="bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs px-4 py-2 rounded-lg transition">ยกเลิก</button>
+        <button onclick="submitCustomKillTime()" class="bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-xs px-5 py-2 rounded-lg transition shadow-md shadow-yellow-500/10">ยืนยันเวลาบันทึก</button>
       </div>
     </div>
   </div>
@@ -322,11 +324,13 @@
     let localBosses = {};
     let sourceBossesCache = {};
     let isSoundEnabled = false;
+    
     let bossesRef = null;
 
     const played5MinAlerts = new Set();
     const playedSpawnAlerts = new Set();
 
+    // ฟังก์ชันช่วยกำหนดสไตล์ของแท็กดรอปไอเทมตามสีที่เลือก
     function getDropTagStyle(color) {
       switch (color) {
         case 'red':
@@ -341,6 +345,7 @@
       }
     }
 
+    // 1. ระบบ Browser Notification
     function requestNotificationPermission() {
       if (!("Notification" in window)) {
         alert("เบราว์เซอร์ของคุณไม่รองรับการแจ้งเตือนแบบ Web Notification");
@@ -375,6 +380,7 @@
       }
     }
 
+    // 2. ระบบพูดแจ้งเตือนภาษาอังกฤษ
     function speakTextEnglish(text) {
       if (!isSoundEnabled || !('speechSynthesis' in window)) return;
       window.speechSynthesis.cancel();
@@ -404,6 +410,7 @@
       }
     }
 
+    // 3. เปลี่ยนเซิร์ฟเวอร์แบบปุ่มกด
     function changeServer(serverName) {
       currentServer = serverName;
       document.getElementById('current-server-display').innerText = currentServer;
@@ -426,8 +433,10 @@
       bindFirebaseListeners();
     }
 
+    // ผูก Realtime Database
     function bindFirebaseListeners() {
       if (bossesRef) bossesRef.off();
+
       bossesRef = db.ref(`servers/${currentServer}/bosses`);
 
       bossesRef.on('value', (snapshot) => {
@@ -441,6 +450,7 @@
     bindFirebaseListeners();
     updateNotificationBtnUI();
 
+    // ระบบเลือกไฟล์รูป และ พรีวิวรูป
     function handleFileUpload(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -481,6 +491,7 @@
       document.getElementById('image-preview-container').classList.add('hidden');
     }
 
+    // CRUD Boss Functions
     function toggleManageModal(show) {
       document.getElementById('manage-modal').classList.toggle('hidden', !show);
       if (show) {
@@ -491,6 +502,7 @@
       }
     }
 
+    // --- ฟังก์ชันสำหรับระบบนำเข้าข้อมูลบอสจากเซิร์ฟเวอร์อื่น ---
     function initImportServerDropdown() {
       const select = document.getElementById('import-source-server');
       select.innerHTML = '';
@@ -666,6 +678,7 @@
       }
     }
 
+    // ฟังก์ชันสำหรับลบบอสทั้งหมดในเซิร์ฟเวอร์ปัจจุบัน
     function deleteAllServerBosses() {
       const bossKeys = Object.keys(localBosses);
       if (bossKeys.length === 0) {
@@ -765,6 +778,7 @@
       });
     }
 
+    // ฟังก์ชันจัดการเวลาบอส
     function setKillNow(id) {
       openCustomTimeModal(id);
     }
@@ -796,20 +810,9 @@
       db.ref(`servers/${currentServer}/bosses/${id}`).update({ lastKilled: aliveLastKilled });
     }
 
-    // MODAL จัดการแก้ไข/ยืนยันเวลาและวันเดือนปีตาย
+    // MODAL จัดการแก้ไข/ยืนยันเวลาตาย
     function toggleTimeModal(show) {
       document.getElementById('time-modal').classList.toggle('hidden', !show);
-    }
-
-    // แปลง Date Object เป็น รูปแบบ ISO สำหรับ datetime-local (YYYY-MM-DDTHH:mm)
-    function formatDateToISO(date) {
-      const pad = (n) => n.toString().padStart(2, '0');
-      const year = date.getFullYear();
-      const month = pad(date.getMonth() + 1);
-      const day = pad(date.getDate());
-      const hours = pad(date.getHours());
-      const minutes = pad(date.getMinutes());
-      return `${year}-${month}-${day}T${hours}:${minutes}`;
     }
 
     function openCustomTimeModal(id) {
@@ -817,69 +820,43 @@
       if (!boss) return;
 
       document.getElementById('time-boss-id').value = id;
-      
-      // ใช้เวลาที่พึ่งบันทึกล่าสุด หรือถ้าไม่มีให้ใช้เวลาปัจจุบัน
-      const targetTime = boss.lastKilled && boss.lastKilled > 0 ? new Date(boss.lastKilled) : new Date();
+      const displayName = boss.nameTh ? `${boss.name} (${boss.nameTh})` : boss.name;
+      document.getElementById('modal-boss-name').innerText = displayName;
 
-      // เติมค่าลงใน datetime-local input
-      document.getElementById('kill-datetime-picker').value = formatDateToISO(targetTime);
+      const now = new Date();
+      const pad = (n) => n.toString().padStart(2, '0');
 
-      // อัปเดตข้อความแสดงผล
-      updateDisplayTimeFromPicker();
+      // กำหนดค่าตั้งต้นให้เวลา (HH:mm 24 ชม.) และ วัน/เดือน/ปี ค.ศ. (YYYY-MM-DD)
+      const currentTimeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+      const currentDateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+
+      document.getElementById('custom-time-input').value = currentTimeStr;
+      document.getElementById('custom-date-input').value = currentDateStr;
 
       toggleTimeModal(true);
     }
 
-    function setCurrentTimeToInput() {
-      const now = new Date();
-      document.getElementById('kill-datetime-picker').value = formatDateToISO(now);
-      updateDisplayTimeFromPicker();
-    }
-
-    function updateDisplayTimeFromPicker() {
-      const pickerValue = document.getElementById('kill-datetime-picker').value;
-      if (!pickerValue) return;
-
-      const date = new Date(pickerValue);
-      if (isNaN(date.getTime())) return;
-
-      const thaiMonths = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
-      const pad = (n) => n.toString().padStart(2, '0');
-      
-      const hours = pad(date.getHours());
-      const minutes = pad(date.getMinutes());
-      const day = date.getDate();
-      const month = thaiMonths[date.getMonth()];
-      const yearTH = date.getFullYear() + 543;
-
-      document.getElementById('display-kill-time').innerText = `${hours}:${minutes} น.`;
-      document.getElementById('display-kill-date').innerText = `${day} ${month} ${yearTH} (ค.ศ. ${date.getFullYear()})`;
-    }
-
     function submitCustomKillTime() {
       const id = document.getElementById('time-boss-id').value;
-      const pickerValue = document.getElementById('kill-datetime-picker').value;
-      
-      if (!id || !pickerValue) {
-        alert("กรุณาระบุวันและเวลาให้ครบถ้วน");
-        return;
-      }
+      const timeVal = document.getElementById('custom-time-input').value;
+      const dateVal = document.getElementById('custom-date-input').value;
 
-      const selectedDate = new Date(pickerValue);
-      const timestamp = selectedDate.getTime();
+      if (!timeVal || !dateVal) return alert("กรุณาระบุวันและเวลาให้ครบถ้วน");
 
-      if (isNaN(timestamp)) {
-        alert("รูปแบบวันเวลาไม่ถูกต้อง");
-        return;
-      }
+      // รวม Date string และ Time string เพื่อแปลงเป็น Timestamp (CE)
+      const targetDate = new Date(`${dateVal}T${timeVal}`);
+      const targetTimestamp = targetDate.getTime();
+
+      if (isNaN(targetTimestamp)) return alert("รูปแบบวันเวลาไม่ถูกต้อง");
 
       played5MinAlerts.delete(id);
       playedSpawnAlerts.delete(id);
 
-      db.ref(`servers/${currentServer}/bosses/${id}`).update({ lastKilled: timestamp });
+      db.ref(`servers/${currentServer}/bosses/${id}`).update({ lastKilled: targetTimestamp });
       toggleTimeModal(false);
     }
 
+    // รีเซ็ตเวลาบอสทั้งหมดในเซิร์ฟเวอร์
     function resetAllBossesTime() {
       if (confirm(`คุณต้องการ "รีเซ็ตเวลาบอสทั้งหมด" ในเซิร์ฟเวอร์ ${currentServer} ใช่หรือไม่?`)) {
         const updates = {};
@@ -893,17 +870,21 @@
     function filterBosses() { renderBosses(); }
 
     function formatLastKilledThai(timestamp) {
-      if (!timestamp) return 'ยังไม่มีข้อมูล';
-      const thaiMonths = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+      if (!timestamp) return '<span class="text-xs text-gray-500">ยังไม่มีข้อมูล</span>';
       const date = new Date(timestamp);
-      const day = date.getDate();
-      const month = thaiMonths[date.getMonth()];
-      const year = date.getFullYear();
-      const hours = date.getHours().toString().padStart(2, '0');
-      const minutes = date.getMinutes().toString().padStart(2, '0');
-      return `${day} ${month} ${year} ${hours}:${minutes}`;
+      
+      const pad = (n) => n.toString().padStart(2, '0');
+      const timeStr = `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+      const dateStr = `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`;
+      
+      return `
+        <span class="text-xs text-gray-400 block mt-1">
+          ตายล่าสุด: <strong class="text-yellow-400 font-mono">${timeStr}</strong> <span class="text-[11px] font-mono">(${dateStr})</span>
+        </span>
+      `;
     }
 
+    // Render รายการบอส
     function renderBosses() {
       const container = document.getElementById('boss-list');
       const searchKeyword = document.getElementById('search-input').value.toLowerCase();
@@ -967,7 +948,7 @@
 
         const bossNameEng = boss.name.split('(')[0].trim();
         const displayTitle = boss.nameTh ? `${boss.name} (${boss.nameTh})` : boss.name;
-        const lastKilledStr = formatLastKilledThai(lastKilled);
+        const lastKilledHtml = formatLastKilledThai(lastKilled);
 
         if (!lastKilled) {
           statusBadge = `<span class="bg-gray-800 text-gray-400 text-[10px] font-semibold px-2 py-0.5 rounded border border-gray-700">NO DATA</span>`;
@@ -1042,7 +1023,7 @@
           : '';
 
         const aliveActionButtons = isAlive 
-          ? `<button onclick="setKillNow('${boss.id}')" title="กดเมื่อบอสตาย เพื่อยืนยันเวลา" class="flex-1 md:flex-initial bg-red-600 hover:bg-red-500 active:scale-95 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition flex items-center justify-center gap-1 shadow-sm shadow-red-600/30">
+          ? `<button onclick="setKillNow('${boss.id}')" title="กดเมื่อบอสตาย เพื่อยืนยัน/ปรับเวลา" class="flex-1 md:flex-initial bg-red-600 hover:bg-red-500 active:scale-95 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition flex items-center justify-center gap-1 shadow-sm shadow-red-600/30">
                <i class="fa-solid fa-skull"></i> ตาย
              </button>
              <button onclick="setBossMiss('${boss.id}')" title="บอสไม่เกิด (นับรอบต่อไป)" class="flex-1 md:flex-initial bg-amber-600 hover:bg-amber-500 active:scale-95 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition flex items-center justify-center gap-1 shadow-sm shadow-amber-600/30">
@@ -1053,6 +1034,7 @@
         const row = document.createElement('div');
         row.className = `border rounded-xl p-3 sm:p-4 flex flex-col md:flex-row items-center justify-between gap-3 transition-all duration-200 ${rowBg}`;
         row.innerHTML = `
+          <!-- ฝั่งซ้าย: รูปภาพ + ข้อมูลบอส + สถานที่ + เวลาตายล่าสุด -->
           <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
             <div class="flex items-center gap-3 min-w-0">
               ${bossImgHtml}
@@ -1069,7 +1051,7 @@
                   ${statusBadge}
                 </div>
                 ${locationHtml}
-                <span class="text-[10px] text-gray-400 block mt-0.5"><i class="fa-solid fa-crosshairs text-gray-500 mr-1"></i>ตายล่าสุด: <strong class="text-gray-300 font-normal">${lastKilledStr}</strong></span>
+                ${lastKilledHtml}
               </div>
             </div>
             <div class="text-xs text-gray-400 md:hidden font-mono flex-shrink-0">
@@ -1077,6 +1059,7 @@
             </div>
           </div>
 
+          <!-- ฝั่งกลาง: ข้อมูลเวลาเกิด & ตัวนับถอยหลัง -->
           <div class="flex items-center gap-4 w-full md:w-auto justify-between md:justify-center">
             <div class="hidden md:block text-right text-xs text-gray-400">
               <span class="block text-[10px] text-gray-500">เวลาเกิด ${boss.respawnHours} ชม.</span>
@@ -1090,11 +1073,12 @@
             </div>
           </div>
 
+          <!-- ฝั่งขวา: ปุ่มจัดการเวลา -->
           <div class="flex items-center gap-1.5 w-full md:w-auto justify-end">
             ${spawnButtonHtml}
             ${aliveActionButtons}
-            <button onclick="openCustomTimeModal('${boss.id}')" title="แก้ไขวัน/เวลาตาย" class="bg-gray-800 hover:bg-gray-700 active:scale-95 text-gray-200 px-3 py-1.5 rounded-lg text-xs transition border border-gray-700 flex items-center justify-center gap-1">
-              <i class="fa-solid fa-pen-to-square"></i> แก้ไขเวลา
+            <button onclick="openCustomTimeModal('${boss.id}')" title="ระบุเวลาตายเอง" class="bg-gray-800 hover:bg-gray-700 active:scale-95 text-gray-200 px-3 py-1.5 rounded-lg text-xs transition border border-gray-700 flex items-center justify-center gap-1">
+              <i class="fa-solid fa-clock"></i> แก้ไข
             </button>
           </div>
         `;
