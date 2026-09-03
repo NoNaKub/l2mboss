@@ -7,9 +7,13 @@
   <!-- Tailwind CSS & FontAwesome Icons -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <!-- Firebase SDKs -->
+  
+  <!-- Firebase SDKs (v9 Compat) -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <!-- เพิ่ม Firebase Auth SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  
   <script>
     tailwind.config = {
       darkMode: 'class',
@@ -75,15 +79,24 @@
           <span id="sound-text">Mute Voice</span>
         </button>
 
-        <!-- ปุ่มรีเซ็ตเวลาบอสทั้งหมด -->
-        <button onclick="resetAllBossesTime()" title="รีเซ็ตเวลาบอสทั้งหมดในเซิร์ฟเวอร์นี้" class="bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-800/50 px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5">
+        <!-- ปุ่มรีเซ็ตเวลาบอสทั้งหมด (แสดงเมื่อล็อกอินแล้วเท่านั้น) -->
+        <button id="btn-reset-all" onclick="resetAllBossesTime()" title="รีเซ็ตเวลาบอสทั้งหมดในเซิร์ฟเวอร์นี้" class="hidden bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-800/50 px-3 py-1.5 rounded-lg text-xs font-semibold transition items-center gap-1.5">
           <i class="fa-solid fa-rotate-left"></i> รีเซ็ตเวลาบอสทั้งหมด
         </button>
 
-        <!-- Management Button -->
-        <button onclick="toggleManageModal(true)" class="bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-3 py-1.5 rounded-lg text-xs transition flex items-center gap-1.5 shadow-md shadow-yellow-500/10">
+        <!-- Management Button (แสดงเมื่อล็อกอินแล้วเท่านั้น) -->
+        <button id="btn-manage-boss" onclick="toggleManageModal(true)" class="hidden bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-3 py-1.5 rounded-lg text-xs transition items-center gap-1.5 shadow-md shadow-yellow-500/10">
           <i class="fa-solid fa-gear"></i> จัดการบอส
         </button>
+
+        <!-- Login / Logout Buttons -->
+        <button id="btn-login-open" onclick="toggleLoginModal(true)" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition flex items-center gap-1.5 shadow-md">
+          <i class="fa-solid fa-right-to-bracket"></i> เข้าสู่ระบบ
+        </button>
+        <button id="btn-logout" onclick="handleLogout()" class="hidden bg-gray-800 hover:bg-gray-700 text-red-400 border border-gray-700 px-3 py-1.5 rounded-lg text-xs font-bold transition items-center gap-1.5">
+          <i class="fa-solid fa-right-from-bracket"></i> ออกจากระบบ
+        </button>
+
       </div>
     </div>
   </header>
@@ -97,6 +110,9 @@
         <span class="w-2.5 h-2.5 rounded-full bg-green-500 animate-ping"></span>
         <span class="text-xs text-gray-400">กำลังแสดงข้อมูลเซิร์ฟเวอร์:</span>
         <span id="current-server-display" class="text-sm font-black text-yellow-400 uppercase tracking-wider">A10</span>
+        <span id="user-status-badge" class="ml-2 text-[10px] bg-gray-800 text-gray-400 border border-gray-700 px-2 py-0.5 rounded-full">
+          <i class="fa-solid fa-eye mr-1"></i> โหมดดูอย่างเดียว
+        </span>
       </div>
 
       <!-- ปุ่มขอเปิดสิทธิ์ Web Notifications -->
@@ -133,6 +149,50 @@
       </div>
     </div>
   </main>
+
+  <!-- MODAL: เข้าสู่ระบบ (LOGIN MODAL) -->
+  <div id="login-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-sm p-6 shadow-2xl relative">
+      <button onclick="toggleLoginModal(false)" class="absolute top-4 right-4 text-gray-400 hover:text-white transition">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+
+      <div class="text-center mb-6">
+        <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400 text-2xl mx-auto mb-3 shadow-inner">
+          <i class="fa-solid fa-user-lock"></i>
+        </div>
+        <h2 class="text-lg font-bold text-white">เข้าสู่ระบบจัดการบอส</h2>
+        <p class="text-xs text-gray-400 mt-1">กรอก ID และ Password เพื่อรับสิทธิ์การแก้ไขข้อมูล</p>
+      </div>
+
+      <!-- Login Form -->
+      <form onsubmit="handleLogin(event)" class="space-y-4">
+        <div>
+          <label class="text-[11px] text-gray-400 block mb-1">ID / Username</label>
+          <div class="relative">
+            <i class="fa-solid fa-user absolute left-3 top-3 text-gray-500 text-xs"></i>
+            <input type="text" id="login-id" placeholder="เช่น member01" required
+                   class="w-full bg-gray-950 border border-gray-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 transition">
+          </div>
+        </div>
+
+        <div>
+          <label class="text-[11px] text-gray-400 block mb-1">Password</label>
+          <div class="relative">
+            <i class="fa-solid fa-key absolute left-3 top-3 text-gray-500 text-xs"></i>
+            <input type="password" id="login-password" placeholder="••••••••" required
+                   class="w-full bg-gray-950 border border-gray-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 transition">
+          </div>
+        </div>
+
+        <div id="login-error-msg" class="hidden text-xs text-red-400 bg-red-950/40 border border-red-900/50 p-2.5 rounded-lg text-center"></div>
+
+        <button type="submit" id="btn-submit-login" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2">
+          <span>เข้าสู่ระบบ</span>
+        </button>
+      </form>
+    </div>
+  </div>
 
   <!-- MODAL 1: เมนูจัดการข้อมูลบอส (CRUD + Import + Delete All) -->
   <div id="manage-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
@@ -269,7 +329,7 @@
     </div>
   </div>
 
-  <!-- MODAL 3: ยืนยัน/ปรับแต่งแก้ไขเวลาตายของบอส (ปรับแก้ตามความต้องการ) -->
+  <!-- MODAL 3: ยืนยัน/ปรับแต่งแก้ไขเวลาตายของบอส -->
   <div id="time-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-sm p-6 shadow-2xl">
       <div class="flex justify-between items-center mb-6 border-b border-gray-800 pb-3">
@@ -283,13 +343,11 @@
 
       <!-- ส่วนแก้ไขเวลา: บรรทัดแรก เวลาตัวใหญ่ (24 ชม.), บรรทัดสอง วันเดือนปี (ค.ศ. / CE) -->
       <div class="space-y-4 mb-6">
-        <!-- บรรทัดแรก: เวลา 24 ชั่วโมง ตัวหนังสือขนาดใหญ่ -->
         <div>
           <input type="time" id="custom-time-input" step="60" 
                  class="w-full bg-gray-950 border border-yellow-500/80 rounded-xl px-4 py-3 text-3xl font-black text-center text-yellow-400 font-mono focus:outline-none focus:ring-2 focus:ring-yellow-500 transition shadow-inner [color-scheme:dark]">
         </div>
 
-        <!-- บรรทัดที่สอง: วัน เดือน ปี ค.ศ. (CE) -->
         <div>
           <input type="date" id="custom-date-input" 
                  class="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-2.5 text-sm font-semibold text-center text-gray-200 font-mono focus:outline-none focus:border-yellow-500 transition [color-scheme:dark]">
@@ -317,6 +375,7 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+    const auth = firebase.auth();
 
     const availableServers = ["A9", "A10", "Invasion"];
 
@@ -324,11 +383,97 @@
     let localBosses = {};
     let sourceBossesCache = {};
     let isSoundEnabled = false;
+    let currentUser = null; // เก็บตัวแปรสถานะ User ที่ล็อกอิน
     
     let bossesRef = null;
 
     const played5MinAlerts = new Set();
     const playedSpawnAlerts = new Set();
+
+    // ----------------------------------------------------
+    // ระบบ Authentication (ID & Password)
+    // ----------------------------------------------------
+    function toggleLoginModal(show) {
+      document.getElementById('login-modal').classList.toggle('hidden', !show);
+      document.getElementById('login-error-msg').classList.add('hidden');
+      if (show) {
+        document.getElementById('login-id').value = '';
+        document.getElementById('login-password').value = '';
+      }
+    }
+
+    function handleLogin(e) {
+      e.preventDefault();
+      const idInput = document.getElementById('login-id').value.trim();
+      const passwordInput = document.getElementById('login-password').value.trim();
+      const errorMsg = document.getElementById('login-error-msg');
+
+      if (!idInput || !passwordInput) return;
+
+      // ปรับรูปแบบ ID ให้เป็น Format Email สำหรับ Firebase (กรณีไม่ได้พิมพ์ @)
+      let email = idInput;
+      if (!email.includes('@')) {
+        email = idInput + '@l2mboss.com';
+      }
+
+      auth.signInWithEmailAndPassword(email, passwordInput)
+        .then(() => {
+          toggleLoginModal(false);
+        })
+        .catch((error) => {
+          errorMsg.classList.remove('hidden');
+          if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+            errorMsg.innerText = 'ID หรือ Password ไม่ถูกต้อง!';
+          } else {
+            errorMsg.innerText = 'เกิดข้อผิดพลาด: ' + error.message;
+          }
+        });
+    }
+
+    function handleLogout() {
+      if (confirm('คุณต้องการออกจากระบบใช่หรือไม่?')) {
+        auth.signOut();
+      }
+    }
+
+    // ติดตามสถานะการ ล็อกอิน / ออกจากระบบ
+    auth.onAuthStateChanged((user) => {
+      currentUser = user;
+      const btnLoginOpen = document.getElementById('btn-login-open');
+      const btnLogout = document.getElementById('btn-logout');
+      const btnResetAll = document.getElementById('btn-reset-all');
+      const btnManageBoss = document.getElementById('btn-manage-boss');
+      const statusBadge = document.getElementById('user-status-badge');
+
+      if (user) {
+        // สถานะ: ล็อกอินแล้ว
+        btnLoginOpen.classList.add('hidden');
+        btnLogout.classList.remove('hidden');
+        btnLogout.classList.add('flex');
+        btnResetAll.classList.remove('hidden');
+        btnResetAll.classList.add('flex');
+        btnManageBoss.classList.remove('hidden');
+        btnManageBoss.classList.add('flex');
+
+        const userName = user.email.split('@')[0];
+        statusBadge.className = "ml-2 text-[10px] bg-green-950/80 text-green-400 border border-green-800 px-2.5 py-0.5 rounded-full font-bold";
+        statusBadge.innerHTML = `<i class="fa-solid fa-user-check mr-1"></i> เข้าสู่ระบบ: ${userName}`;
+      } else {
+        // สถานะ: ยังไม่ได้ล็อกอิน (อ่านได้อย่างเดียว)
+        btnLoginOpen.classList.remove('hidden');
+        btnLogout.classList.add('hidden');
+        btnResetAll.classList.add('hidden');
+        btnManageBoss.classList.add('hidden');
+
+        statusBadge.className = "ml-2 text-[10px] bg-gray-800 text-gray-400 border border-gray-700 px-2 py-0.5 rounded-full";
+        statusBadge.innerHTML = `<i class="fa-solid fa-eye mr-1"></i> โหมดดูอย่างเดียว`;
+      }
+      renderBosses(); // Render หน้าจอเพื่ออัปเดตปุ่มจัดการ
+    });
+
+    // ----------------------------------------------------
+    // ฟังก์ชันเดิมของระบบ Boss Tracker
+    // ----------------------------------------------------
 
     // ฟังก์ชันช่วยกำหนดสไตล์ของแท็กดรอปไอเทมตามสีที่เลือก
     function getDropTagStyle(color) {
@@ -493,6 +638,11 @@
 
     // CRUD Boss Functions
     function toggleManageModal(show) {
+      if (show && !currentUser) {
+        alert("กรุณาเข้าสู่ระบบก่อนทำการจัดการข้อมูลบอส");
+        toggleLoginModal(true);
+        return;
+      }
       document.getElementById('manage-modal').classList.toggle('hidden', !show);
       if (show) {
         const manageSearch = document.getElementById('manage-search-input');
@@ -567,6 +717,7 @@
     }
 
     function importSingleBoss(bossId) {
+      if (!currentUser) return alert("กรุณาเข้าสู่ระบบก่อนดำเนินการ");
       const boss = sourceBossesCache[bossId];
       if (!boss) return;
 
@@ -589,6 +740,7 @@
     }
 
     function importAllBossesFromSource() {
+      if (!currentUser) return alert("กรุณาเข้าสู่ระบบก่อนดำเนินการ");
       const keys = Object.keys(sourceBossesCache);
       if (keys.length === 0) {
         alert("ไม่มีข้อมูลบอสให้ทำการนำเข้า");
@@ -623,6 +775,7 @@
     }
 
     function saveBoss() {
+      if (!currentUser) return alert("กรุณาเข้าสู่ระบบก่อนดำเนินการ");
       const editId = document.getElementById('edit-boss-id').value;
       const name = document.getElementById('boss-name').value.trim();
       const nameTh = document.getElementById('boss-name-th').value.trim();
@@ -650,6 +803,7 @@
     }
 
     function editBoss(id) {
+      if (!currentUser) return alert("กรุณาเข้าสู่ระบบก่อนดำเนินการ");
       const boss = localBosses[id];
       if (!boss) return;
       document.getElementById('edit-boss-id').value = id;
@@ -673,13 +827,14 @@
     }
 
     function deleteBoss(id, name) {
+      if (!currentUser) return alert("กรุณาเข้าสู่ระบบก่อนดำเนินการ");
       if (confirm(`ลบบอส "${name}" ใช่หรือไม่?`)) {
         db.ref(`servers/${currentServer}/bosses/${id}`).remove();
       }
     }
 
-    // ฟังก์ชันสำหรับลบบอสทั้งหมดในเซิร์ฟเวอร์ปัจจุบัน
     function deleteAllServerBosses() {
+      if (!currentUser) return alert("กรุณาเข้าสู่ระบบก่อนดำเนินการ");
       const bossKeys = Object.keys(localBosses);
       if (bossKeys.length === 0) {
         alert(`ไม่มีข้อมูลบอสในเซิร์ฟเวอร์ ${currentServer} ให้ทำการลบ`);
@@ -780,10 +935,12 @@
 
     // ฟังก์ชันจัดการเวลาบอส
     function setKillNow(id) {
+      if (!currentUser) return toggleLoginModal(true);
       openCustomTimeModal(id);
     }
 
     function setBossMiss(id) {
+      if (!currentUser) return toggleLoginModal(true);
       const boss = localBosses[id];
       if (!boss) return;
       
@@ -798,6 +955,7 @@
     }
 
     function setBossAlive(id) {
+      if (!currentUser) return toggleLoginModal(true);
       const boss = localBosses[id];
       if (!boss) return;
 
@@ -812,10 +970,16 @@
 
     // MODAL จัดการแก้ไข/ยืนยันเวลาตาย
     function toggleTimeModal(show) {
+      if (show && !currentUser) {
+        alert("กรุณาเข้าสู่ระบบก่อนทำการปรับแต่งเวลาบอส");
+        toggleLoginModal(true);
+        return;
+      }
       document.getElementById('time-modal').classList.toggle('hidden', !show);
     }
 
     function openCustomTimeModal(id) {
+      if (!currentUser) return toggleLoginModal(true);
       const boss = localBosses[id];
       if (!boss) return;
 
@@ -826,7 +990,6 @@
       const now = new Date();
       const pad = (n) => n.toString().padStart(2, '0');
 
-      // กำหนดค่าตั้งต้นให้เวลา (HH:mm 24 ชม.) และ วัน/เดือน/ปี ค.ศ. (YYYY-MM-DD)
       const currentTimeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
       const currentDateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 
@@ -837,13 +1000,13 @@
     }
 
     function submitCustomKillTime() {
+      if (!currentUser) return alert("กรุณาเข้าสู่ระบบก่อนดำเนินการ");
       const id = document.getElementById('time-boss-id').value;
       const timeVal = document.getElementById('custom-time-input').value;
       const dateVal = document.getElementById('custom-date-input').value;
 
       if (!timeVal || !dateVal) return alert("กรุณาระบุวันและเวลาให้ครบถ้วน");
 
-      // รวม Date string และ Time string เพื่อแปลงเป็น Timestamp (CE)
       const targetDate = new Date(`${dateVal}T${timeVal}`);
       const targetTimestamp = targetDate.getTime();
 
@@ -856,8 +1019,8 @@
       toggleTimeModal(false);
     }
 
-    // รีเซ็ตเวลาบอสทั้งหมดในเซิร์ฟเวอร์
     function resetAllBossesTime() {
+      if (!currentUser) return alert("กรุณาเข้าสู่ระบบก่อนดำเนินการ");
       if (confirm(`คุณต้องการ "รีเซ็ตเวลาบอสทั้งหมด" ในเซิร์ฟเวอร์ ${currentServer} ใช่หรือไม่?`)) {
         const updates = {};
         Object.keys(localBosses).forEach(id => {
@@ -910,7 +1073,6 @@
           <div class="text-center py-16 text-gray-500 bg-gray-900/30 rounded-xl border border-gray-800">
             <i class="fa-solid fa-ghost text-4xl mb-3 text-gray-600"></i>
             <p class="text-sm font-semibold text-gray-400">ยังไม่มีข้อมูลบอสในเซิร์ฟเวอร์นี้</p>
-            <p class="text-xs text-gray-600 mt-1">กดปุ่ม <strong class="text-yellow-500">"จัดการบอส"</strong> ด้านบนเพื่อเพิ่มข้อมูลบอสใหม่</p>
           </div>
         `;
         document.getElementById('stat-total').innerText = 0;
@@ -1016,18 +1178,25 @@
           ? `<span class="border text-[10px] font-bold px-1.5 py-0.5 rounded ${getDropTagStyle(boss.dropColor)}"><i class="fa-solid fa-gift mr-1"></i>${boss.dropTag}</span>`
           : '';
 
-        const spawnButtonHtml = !isAlive
+        // ถ้ายังไม่ล็อกอิน ให้ซ่อนปุ่มดำเนินการแก้ไขต่างๆ ในแต่ละบรรทัดบอส
+        const spawnButtonHtml = (!isAlive && currentUser)
           ? `<button onclick="setBossAlive('${boss.id}')" title="เปลี่ยนสถานะเป็น ALIVE ทันที" class="bg-green-600 hover:bg-green-500 active:scale-95 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition flex items-center justify-center gap-1 shadow-sm shadow-green-600/30">
                <i class="fa-solid fa-bolt"></i> บอสเกิด
              </button>`
           : '';
 
-        const aliveActionButtons = isAlive 
+        const aliveActionButtons = (isAlive && currentUser)
           ? `<button onclick="setKillNow('${boss.id}')" title="กดเมื่อบอสตาย เพื่อยืนยัน/ปรับเวลา" class="flex-1 md:flex-initial bg-red-600 hover:bg-red-500 active:scale-95 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition flex items-center justify-center gap-1 shadow-sm shadow-red-600/30">
                <i class="fa-solid fa-skull"></i> ตาย
              </button>
              <button onclick="setBossMiss('${boss.id}')" title="บอสไม่เกิด (นับรอบต่อไป)" class="flex-1 md:flex-initial bg-amber-600 hover:bg-amber-500 active:scale-95 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition flex items-center justify-center gap-1 shadow-sm shadow-amber-600/30">
                <i class="fa-solid fa-ban"></i> บอสบิด
+             </button>`
+          : '';
+
+        const editTimeButtonHtml = currentUser
+          ? `<button onclick="openCustomTimeModal('${boss.id}')" title="ระบุเวลาตายเอง" class="bg-gray-800 hover:bg-gray-700 active:scale-95 text-gray-200 px-3 py-1.5 rounded-lg text-xs transition border border-gray-700 flex items-center justify-center gap-1">
+               <i class="fa-solid fa-clock"></i> แก้ไข
              </button>`
           : '';
 
@@ -1077,9 +1246,7 @@
           <div class="flex items-center gap-1.5 w-full md:w-auto justify-end">
             ${spawnButtonHtml}
             ${aliveActionButtons}
-            <button onclick="openCustomTimeModal('${boss.id}')" title="ระบุเวลาตายเอง" class="bg-gray-800 hover:bg-gray-700 active:scale-95 text-gray-200 px-3 py-1.5 rounded-lg text-xs transition border border-gray-700 flex items-center justify-center gap-1">
-              <i class="fa-solid fa-clock"></i> แก้ไข
-            </button>
+            ${editTimeButtonHtml}
           </div>
         `;
         container.appendChild(row);
